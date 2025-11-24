@@ -25,6 +25,19 @@ const gemini = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // --- Routes ---
 
+// Health Check
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        env: {
+            groqKeySet: !!process.env.GROQ_API_KEY,
+            geminiKeySet: !!process.env.GEMINI_API_KEY,
+            nodeEnv: process.env.NODE_ENV
+        }
+    });
+});
+
 // 1. Chat Completion (Streamed)
 app.post('/api/chat', async (req, res) => {
     const { model, messages, temperature, max_tokens, top_p, provider } = req.body;
