@@ -53,6 +53,31 @@ function App() {
   // Voice Input (STT)
   const [isListening, setIsListening] = useState(false);
 
+  // Firebase Auth State Listener
+  useEffect(() => {
+    const initAuth = async () => {
+      const { auth } = await import('./lib/firebase');
+      const { onAuthStateChanged } = await import('firebase/auth');
+
+      const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        if (firebaseUser) {
+          const profile: UserProfile = {
+            name: firebaseUser.displayName || 'User',
+            email: firebaseUser.email || '',
+            picture: firebaseUser.photoURL || ''
+          };
+          setUser(profile);
+        } else {
+          setUser(null);
+        }
+      });
+
+      return unsubscribe;
+    };
+
+    initAuth();
+  }, []);
+
   useEffect(() => {
     if (currentTheme.type === 'dark') {
       document.documentElement.classList.add('dark');
@@ -161,13 +186,21 @@ function App() {
     setUser(profile);
   };
 
-  const handleSignOut = () => {
-    setUser(null);
-    setMessages([]);
-    setInput('');
-    setActiveSessionId(null);
-    stopSpeaking();
-    disconnectLiveSession();
+  const handleSignOut = async () => {
+    try {
+      const { auth } = await import('./lib/firebase');
+      const { signOut } = await import('firebase/auth');
+      await signOut(auth);
+
+      setUser(null);
+      setMessages([]);
+      setInput('');
+      setActiveSessionId(null);
+      stopSpeaking();
+      disconnectLiveSession();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const handleNewChat = () => {
