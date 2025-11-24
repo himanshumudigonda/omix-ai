@@ -108,37 +108,36 @@ app.post('/api/chat', async (req, res) => {
             res.end();
 
         } else if (provider === 'gemini') {
-            // Gemini Logic
-            // Note: The @google/genai SDK usage might differ slightly server-side vs client-side
-            // For simplicity, we'll use the same structure if possible, or adapt.
-            // Since the user was using the new @google/genai SDK, let's stick to it.
-
+            // Gemini - Using generateContentStream (correct SDK method)
             const aiModel = model === 'auto' ? 'gemini-2.5-flash' : model;
-            const chat = gemini.chats.create({
-                model: aiModel,
-                history: messages.slice(0, -1).map(m => ({
-                    role: m.role === 'assistant' ? 'model' : 'user',
-                    parts: [{ text: m.content }]
-                })),
-                config: {
-                    systemInstruction: "You are Omix AI. Format responses beautifully in Markdown.",
+
+            // Build conversation from history
+            let conversationText = "You are Omix AI. Format responses beautifully in Markdown.\n\n";
+            conversationText += messages.map(m =>
+                `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
+            ).join('\n\n');
+
+            try {
+                const result = await gemini.models.generateContentStream({
+                    model: aiModel,
+                    contents: [{ parts: [{ text: conversationText }] }]
+                });
+
+                res.setHeader('Content-Type', 'text/event-stream');
+                res.setHeader('Cache-Control', 'no-cache');
+                res.setHeader('Connection', 'keep-alive');
+
+                for await (const chunk of result) {
+                    if (chunk.text) {
+                        res.write(`data: ${JSON.stringify({ content: chunk.text })}\n\n`);
+                    }
                 }
-            });
-
-            const lastMessage = messages[messages.length - 1].content;
-            const result = await chat.sendMessageStream({ message: lastMessage });
-
-            res.setHeader('Content-Type', 'text/event-stream');
-            res.setHeader('Cache-Control', 'no-cache');
-            res.setHeader('Connection', 'keep-alive');
-
-            for await (const chunk of result) {
-                if (chunk.text) {
-                    res.write(`data: ${JSON.stringify({ content: chunk.text })}\n\n`);
-                }
+                res.write('data: [DONE]\n\n');
+                res.end();
+            } catch (geminiError) {
+                console.error('Gemini Error:', geminiError);
+                res.status(500).json({ error: 'Gemini failed', details: geminiError.message });
             }
-            res.write('data: [DONE]\n\n');
-            res.end();
         }
     } catch (error) {
         console.error('API Error:', error);
