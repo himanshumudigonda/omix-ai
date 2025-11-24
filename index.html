@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nebula AI Workspace</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Outfit', 'sans-serif'],
+              display: ['Space Grotesk', 'sans-serif'],
+              arcade: ['"Press Start 2P"', 'cursive'],
+            },
+            colors: {
+              void: {
+                800: '#121212',
+                900: '#0a0a0a',
+                950: '#050505',
+              },
+              lux: {
+                gold: '#D4AF37',
+                accent: '#7B61FF',
+              }
+            },
+            animation: {
+              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'pulse-fast': 'pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+              'rocket-complex': 'rocketComplex 1.5s ease-in-out forwards',
+              'black-hole': 'blackHole 1.5s ease-in-out forwards',
+              'dust-dissolve': 'dustDissolve 1s ease-out forwards',
+              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+              'float': 'float 6s ease-in-out infinite',
+              'float-fast': 'float 2s ease-in-out infinite',
+              'aurora': 'aurora 20s linear infinite',
+              'shimmer': 'shimmer 3s linear infinite',
+              'spin-slow': 'spin 3s linear infinite',
+              'slot-spin': 'slotSpin 0.5s linear infinite',
+              'hologram-flicker': 'hologramFlicker 2s infinite',
+              'scan-eyes': 'scanEyes 4s infinite',
+              'scan-beam': 'scanBeam 5s infinite',
+              'equalizer-1': 'equalizer 0.8s ease-in-out infinite',
+              'equalizer-2': 'equalizer 0.6s ease-in-out infinite',
+              'equalizer-3': 'equalizer 0.9s ease-in-out infinite',
+              'bounce-subtle': 'bounceSubtle 1s infinite'
+            },
+            keyframes: {
+              rocketComplex: {
+                '0%': { transform: 'translate(0, 0) rotate(0deg) scale(1)', opacity: '1' },
+                '20%': { transform: 'translate(-50px, -50px) rotate(-45deg) scale(0.8)' },
+                '40%': { transform: 'translate(100px, -150px) rotate(45deg) scale(0.8)' },
+                '60%': { transform: 'translate(-100px, -300px) rotate(-45deg) scale(0.6)' },
+                '80%': { transform: 'translate(0px, -500px) rotate(0deg) scale(0.4)' },
+                '100%': { transform: 'translate(0px, -800px) scale(0)', opacity: '0' }
+              },
+              blackHole: {
+                '0%': { transform: 'scale(1) rotate(0deg)', opacity: '1' },
+                '50%': { transform: 'scale(0.1) rotate(720deg)', opacity: '0.5' },
+                '100%': { transform: 'scale(0) rotate(1440deg)', opacity: '0' }
+              },
+              dustDissolve: {
+                '0%': { opacity: '1', transform: 'translateX(0) scale(1)', filter: 'blur(0px)' },
+                '100%': { opacity: '0', transform: 'translateX(100px) scale(1.5)', filter: 'blur(10px)' }
+              },
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+              },
+              aurora: {
+                '0%': { backgroundPosition: '0% 50%' },
+                '50%': { backgroundPosition: '100% 50%' },
+                '100%': { backgroundPosition: '0% 50%' }
+              },
+              slotSpin: {
+                '0%': { transform: 'translateY(0)' },
+                '100%': { transform: 'translateY(-100%)' }
+              },
+              hologramFlicker: {
+                '0%, 100%': { opacity: '0.1' },
+                '50%': { opacity: '0.4' },
+                '52%': { opacity: '0.1' },
+                '54%': { opacity: '0.4' }
+              },
+              scanEyes: {
+                '0%, 100%': { transform: 'translateX(0)' },
+                '20%': { transform: 'translateX(-5px)' },
+                '80%': { transform: 'translateX(5px)' }
+              },
+              scanBeam: {
+                '0%': { transform: 'rotate(0deg)', opacity: '0' },
+                '20%': { opacity: '0.3' },
+                '80%': { opacity: '0.3' },
+                '100%': { transform: 'rotate(30deg)', opacity: '0' }
+              },
+              equalizer: {
+                '0%, 100%': { height: '10px' },
+                '50%': { height: '20px' }
+              },
+              bounceSubtle: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-5px)' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+      
+      .liquid-scroll {
+        transition: transform 0.1s;
+        will-change: transform;
+      }
+      
+      .scratch-canvas {
+        touch-action: none;
+      }
+
+      @keyframes letter-drop {
+        0% { transform: translateY(-50px); opacity: 0; }
+        60% { transform: translateY(5px); opacity: 1; }
+        100% { transform: translateY(0); opacity: 1; }
+      }
+      
+      .animate-letter-drop {
+        animation: letter-drop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-syntax-highlighter": "https://esm.sh/react-syntax-highlighter@15.5.0?external=react",
+    "react-syntax-highlighter/dist/esm/styles/prism": "https://esm.sh/react-syntax-highlighter@15.5.0/dist/esm/styles/prism?external=react",
+    "react-syntax-highlighter/": "https://aistudiocdn.com/react-syntax-highlighter@^16.1.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-[#F8F9FA] text-gray-900 dark:bg-void-950 dark:text-lux-platinum transition-colors duration-500 antialiased selection:bg-lux-accent selection:text-white">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

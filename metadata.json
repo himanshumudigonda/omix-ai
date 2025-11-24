@@ -1,0 +1,7 @@
+{
+  "name": "Omix AI",
+  "description": "Fast and furious AI chat interface powered by Groq and Gemini.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
