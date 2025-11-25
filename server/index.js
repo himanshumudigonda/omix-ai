@@ -16,8 +16,11 @@ app.use(cors());
 app.use(express.json());
 
 // API Keys (Load from environment variables)
-const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBhTEPYOuNmx-SXbcXsnUSY1-M21jWKZgA';
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+if (!GROQ_API_KEY) console.warn("⚠️ GROQ_API_KEY is missing!");
+if (!GEMINI_API_KEY) console.warn("⚠️ GEMINI_API_KEY is missing!");
 
 // Initialize Clients
 const groq = new Groq({ apiKey: GROQ_API_KEY });
@@ -109,7 +112,8 @@ app.post('/api/chat', async (req, res) => {
 
         } else if (provider === 'gemini') {
             // Gemini - Using generateContentStream (correct SDK method)
-            const aiModel = model === 'auto' ? 'gemini-2.5-flash' : model;
+            // Defaulting to gemma-3-27b-it as it is currently the only working high-capacity model for this key
+            const aiModel = model === 'auto' ? 'gemma-3-27b-it' : model;
 
             // Build conversation from history
             let conversationText = "You are Omix AI. Format responses beautifully in Markdown.\n\n";

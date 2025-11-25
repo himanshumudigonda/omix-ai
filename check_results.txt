@@ -1,0 +1,10 @@
+
+--------------------------------------------------
+🚀 Attempting to initialize and test models...
+--------------------------------------------------
+❌ gemma-3-1b-it                       : 403 Permission Denied
+❌ gemma-3-4b-it                       : 403 Permission Denied
+❌ gemma-3-12b-it                      : 403 Permission Denied
+❌ gemma-3-27b-it                      : 403 Permission Denied
+--------------------------------------------------
+
