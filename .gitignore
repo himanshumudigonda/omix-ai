@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment Variables
+.env
+.env.test
+.env.production
+
+# Test Outputs
+test_output.txt
+check_results.txt
+available_models.json
+all_models.txt
