@@ -13,7 +13,7 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 // API Key Strategy: Env Var Only
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBwCZmLO1OEbhRgVShwb0vZ0bk6pL1DDaY';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBHbaA2VD8x0eIlVVld1P0IX1wqx_p5JVA';
 
 console.log(`\n🔑 Using API Key: ${GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 10) + '...' : 'NONE'}`);
 
@@ -21,7 +21,12 @@ const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // List of models to test
 const targetModels = [
-    "llama-3.3-70b-versatile"
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-pro",
+    "gemini-2.0-flash-exp",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro"
 ];
 
 async function accessModels() {

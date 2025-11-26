@@ -1,4 +1,4 @@
-import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
+// import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import { GEMINI_API_KEY } from '../lib/models';
 
 export type VoiceGender = 'male' | 'female';

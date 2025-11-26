@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Groq } from 'groq-sdk';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,14 +17,17 @@ app.use(express.json());
 
 // API Keys (Load from environment variables)
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDgd6vyRrBZRe3gK0vuKlXcRlluasIQKeM';
 
 if (!GROQ_API_KEY) console.warn("⚠️ GROQ_API_KEY is missing!");
 if (!GEMINI_API_KEY) console.warn("⚠️ GEMINI_API_KEY is missing!");
 
 // Initialize Clients
 const groq = new Groq({ apiKey: GROQ_API_KEY });
-const gemini = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+const gemini = new OpenAI({
+    apiKey: GEMINI_API_KEY,
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+});
 
 // --- Routes ---
 
@@ -58,9 +61,6 @@ app.post('/api/chat', async (req, res) => {
             // 1. Compound Models
             if (model === 'groq/compound' || model === 'groq/compound-mini') {
                 headers['Groq-Model-Version'] = 'latest';
-                // Note: Compound tools handling would need more backend logic, 
-                // for now we stick to basic chat or need to pass tools param.
-                // Keeping it simple for this migration.
                 maxTokens = 1024;
             }
             // 2. Qwen Reasoning
@@ -128,29 +128,24 @@ app.post('/api/chat', async (req, res) => {
             res.end();
 
         } else if (provider === 'gemini') {
-            // Gemini - Using generateContentStream (correct SDK method)
-            // Defaulting to gemini-2.5-flash as it is the standard high-capacity model
-            const aiModel = model === 'auto' ? 'gemini-1.5-flash' : model;
-
-            // Build conversation from history
-            let conversationText = "You are Omix AI. Format responses beautifully in Markdown.\n\n";
-            conversationText += messages.map(m =>
-                `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`
-            ).join('\n\n');
+            // Gemini via OpenAI Compatibility Layer
+            const aiModel = model === 'auto' ? 'gemini-2.5-flash' : model;
 
             try {
-                const result = await gemini.models.generateContentStream({
+                const stream = await gemini.chat.completions.create({
                     model: aiModel,
-                    contents: [{ parts: [{ text: conversationText }] }]
+                    messages: messages,
+                    stream: true,
                 });
 
                 res.setHeader('Content-Type', 'text/event-stream');
                 res.setHeader('Cache-Control', 'no-cache');
                 res.setHeader('Connection', 'keep-alive');
 
-                for await (const chunk of result) {
-                    if (chunk.text) {
-                        res.write(`data: ${JSON.stringify({ content: chunk.text })}\n\n`);
+                for await (const chunk of stream) {
+                    const content = chunk.choices[0]?.delta?.content || '';
+                    if (content) {
+                        res.write(`data: ${JSON.stringify({ content })}\n\n`);
                     }
                 }
                 res.write('data: [DONE]\n\n');
@@ -178,32 +173,9 @@ app.post('/api/image', async (req, res) => {
         return res.json({ imageUrl });
     }
 
-    // Gemini / Imagen
-    try {
-        const response = await gemini.models.generateContent({
-            model: model || 'imagen-3.0-generate-001',
-            contents: { parts: [{ text: prompt }] },
-        });
-
-        let imageUrl;
-        let textOutput;
-
-        if (response.candidates && response.candidates[0].content && response.candidates[0].content.parts) {
-            for (const part of response.candidates[0].content.parts) {
-                if (part.inlineData) {
-                    imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                } else if (part.text) {
-                    textOutput = part.text;
-                }
-            }
-        }
-
-        res.json({ imageUrl, text: textOutput });
-
-    } catch (error) {
-        console.error('Image Gen Error:', error);
-        res.status(500).json({ error: 'Failed to generate image' });
-    }
+    // For Gemini image generation, we'd need a different endpoint
+    // For now, just return error
+    res.status(501).json({ error: 'Gemini image generation not yet implemented with OpenAI compatibility layer' });
 });
 
 // Serve Static Files (Production)

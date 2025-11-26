@@ -46,9 +46,7 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     name: '⚡ Lightning Fast (Gemini 2.5)',
     models: [
       createModel('gemini-2.5-flash', 'Gemini 2.5 Flash', 'gemini', 'fast'),
-      createModel('gemini-2.5-flash-lite', 'Gemini 2.5 Flash Lite', 'gemini', 'fast'),
       createModel('gemini-2.0-flash', 'Gemini 2.0 Flash', 'gemini', 'fast'),
-      createModel('gemini-2.0-flash-lite', 'Gemini 2.0 Flash Lite', 'gemini', 'fast'),
     ]
   },
   {
