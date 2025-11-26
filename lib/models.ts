@@ -56,37 +56,10 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
       createModel('gemma-3-27b-it', 'Gemma 3 27B Instruct', 'gemini', 'balanced'),
       createModel('gemma-3-12b-it', 'Gemma 3 12B Instruct', 'gemini', 'balanced'),
       createModel('gemma-3-4b-it', 'Gemma 3 4B Instruct', 'gemini', 'fast'),
-      createModel('gemma-3-2b-it', 'Gemma 3 2B Instruct', 'gemini', 'fast'),
       createModel('gemma-3-1b-it', 'Gemma 3 1B Instruct', 'gemini', 'fast'),
     ]
   },
-  {
-    id: 'specialized',
-    name: '🛠️ Specialized & Robotics',
-    models: [
-      createModel('gemini-robotics-er-1.5-preview', 'Gemini Robotics ER 1.5', 'gemini', 'reasoning'),
-      createModel('learnlm-2.0-flash-experimental', 'LearnLM 2.0 Flash (Tutor)', 'gemini', 'balanced'),
-    ]
-  },
-  {
-    id: 'audio',
-    name: '🎙️ Native Audio & Live',
-    models: [
-      createModel('gemini-2.5-flash-native-audio-preview-09-2025', 'Gemini 2.5 Native Audio', 'gemini', 'fast'),
-      createModel('gemini-2.5-flash-live', 'Gemini 2.5 Live', 'gemini', 'fast'),
-      createModel('gemini-2.0-flash-live', 'Gemini 2.0 Live', 'gemini', 'fast'),
-      createModel('gemini-2.5-flash-tts', 'Gemini 2.5 Flash TTS', 'gemini', 'fast'),
-    ]
-  },
-  {
-    id: 'legacy',
-    name: '🕰️ Legacy / Fallback',
-    models: [
-      createModel('gemini-1.5-pro', 'Gemini 1.5 Pro', 'gemini', 'balanced'),
-      createModel('gemini-1.5-flash', 'Gemini 1.5 Flash', 'gemini', 'fast'),
-      createModel('gemini-1.5-flash-8b', 'Gemini 1.5 Flash 8B', 'gemini', 'fast'),
-    ]
-  },
+
   {
     id: 'image',
     name: '🎨 Image Generation',
