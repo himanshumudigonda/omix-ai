@@ -27,9 +27,9 @@ const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 // List of models to test
 // List of models found in your API account
 const targetModels = [
-    "gemma-3-1b-it",
-    "gemma-3-4b-it",
-    "gemma-3-12b-it",
+    "gemini-3-pro-preview",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
     "gemma-3-27b-it"
 ];
 

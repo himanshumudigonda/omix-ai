@@ -112,8 +112,8 @@ app.post('/api/chat', async (req, res) => {
 
         } else if (provider === 'gemini') {
             // Gemini - Using generateContentStream (correct SDK method)
-            // Defaulting to gemma-3-27b-it as it is currently the only working high-capacity model for this key
-            const aiModel = model === 'auto' ? 'gemma-3-27b-it' : model;
+            // Defaulting to gemini-2.5-flash as it is the standard high-capacity model
+            const aiModel = model === 'auto' ? 'gemini-2.5-flash' : model;
 
             // Build conversation from history
             let conversationText = "You are Omix AI. Format responses beautifully in Markdown.\n\n";

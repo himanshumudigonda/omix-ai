@@ -223,6 +223,13 @@ function App() {
   };
 
   const startVoiceInput = () => {
+    // Check if we should use native audio model
+    if (selectedModelId === 'auto' || selectedModelId.includes('gemini')) {
+      // For now, we will just use the browser STT but route it to the new model in the backend
+      // In a full implementation, this would stream audio bytes.
+      // For this migration, we keep the frontend STT but ensure the backend uses the correct model.
+    }
+
     if (!('webkitSpeechRecognition' in window)) {
       alert("Voice recognition not supported in this browser.");
       return;
