@@ -19,7 +19,7 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     id: 'auto',
     name: '✨ Auto-Pilot',
     models: [
-      createModel('auto', 'Auto (Best)', 'gemini', 'balanced')
+      createModel('auto', 'Auto (Best)', 'groq', 'balanced')
     ]
   },
   {

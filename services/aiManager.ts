@@ -35,7 +35,7 @@ export async function* generateSmartResponse(
     console.warn(`Primary model ${targetModelId} failed, switching to backup...`, error);
 
     // Fallback Logic
-    const backupModelId = 'gemini-1.5-flash';
+    const backupModelId = 'llama-3.3-70b-versatile';
     const backupDef = MODELS.find(m => m.id === backupModelId)!;
 
     yield { text: `\n\n*[System: Primary model busy. Switching to ${backupDef.name}...]*\n\n`, model: backupDef.name };

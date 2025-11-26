@@ -81,15 +81,17 @@ app.post('/api/chat', async (req, res) => {
                 temp = 0.6;
                 maxTokens = 4096;
             }
-            // 5. Llama 4 / Default
+            // 5. Llama 4 / Default / Auto
             else {
                 temp = 1;
                 maxTokens = 1024;
             }
 
+            const targetModel = model === 'auto' ? 'llama-3.3-70b-versatile' : model;
+
             const completion = await groq.chat.completions.create({
                 messages,
-                model,
+                model: targetModel,
                 temperature: temp,
                 max_completion_tokens: maxTokens,
                 top_p: topP,

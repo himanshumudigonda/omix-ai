@@ -13,24 +13,15 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 dotenv.config({ path: path.join(__dirname, '../.env.local') });
 
 // API Key Strategy: Env Var Only
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyBwCZmLO1OEbhRgVShwb0vZ0bk6pL1DDaY';
 
 console.log(`\n🔑 Using API Key: ${GEMINI_API_KEY ? GEMINI_API_KEY.substring(0, 10) + '...' : 'NONE'}`);
-
-if (!GEMINI_API_KEY) {
-    console.error("❌ ERROR: GEMINI_API_KEY is missing in .env file.");
-    process.exit(1);
-}
 
 const genai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 // List of models to test
-// List of models found in your API account
 const targetModels = [
-    "gemini-3-pro-preview",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemma-3-27b-it"
+    "llama-3.3-70b-versatile"
 ];
 
 async function accessModels() {
@@ -47,10 +38,21 @@ async function accessModels() {
     for (const modelName of targetModels) {
         try {
             // Attempt to generate simple content to verify access
-            const response = await genai.models.generateContent({
-                model: modelName,
-                contents: [{ parts: [{ text: "Hi" }] }]
-            });
+            let response;
+            if (modelName.includes('gemini')) {
+                response = await genai.models.generateContent({
+                    model: modelName,
+                    contents: [{ parts: [{ text: "Hi" }] }]
+                });
+            } else {
+                const { Groq } = await import('groq-sdk');
+                const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+                const completion = await groq.chat.completions.create({
+                    messages: [{ role: "user", content: "Hi" }],
+                    model: modelName,
+                });
+                response = { text: completion.choices[0]?.message?.content };
+            }
 
             if (response && response.text) {
                 log(`✅ ${modelName.padEnd(35)} : Working`);
@@ -62,11 +64,11 @@ async function accessModels() {
             let status = "Error";
             if (error.response) {
                 status = `${error.response.status} ${error.response.statusText || ''}`;
-            } else if (error.message.includes('404')) {
+            } else if (error.message && error.message.includes('404')) {
                 status = "404 Not Found";
-            } else if (error.message.includes('403')) {
+            } else if (error.message && error.message.includes('403')) {
                 status = "403 Permission Denied";
-            } else if (error.message.includes('400')) {
+            } else if (error.message && error.message.includes('400')) {
                 status = "400 Bad Request";
             }
 
