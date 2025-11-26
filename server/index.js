@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 // API Keys (Load from environment variables)
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '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';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 if (!GROQ_API_KEY) console.warn("⚠️ GROQ_API_KEY is missing!");
@@ -81,7 +81,22 @@ app.post('/api/chat', async (req, res) => {
                 temp = 0.6;
                 maxTokens = 4096;
             }
-            // 5. Llama 4 / Default / Auto
+            // 5. Llama Models (3.3, 3.1)
+            else if (model.includes('llama')) {
+                temp = 0.7;
+                maxTokens = 8192;
+            }
+            // 6. Mixtral
+            else if (model.includes('mixtral')) {
+                temp = 0.6;
+                maxTokens = 4096;
+            }
+            // 7. Gemma 2
+            else if (model.includes('gemma')) {
+                temp = 0.7;
+                maxTokens = 8192;
+            }
+            // 8. Default
             else {
                 temp = 1;
                 maxTokens = 1024;

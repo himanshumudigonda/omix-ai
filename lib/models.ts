@@ -32,6 +32,16 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     ]
   },
   {
+    id: 'groq',
+    name: '🚀 Hyper-Fast (Groq)',
+    models: [
+      createModel('llama-3.3-70b-versatile', 'Llama 3.3 70B (Groq)', 'groq', 'balanced'),
+      createModel('llama-3.1-8b-instant', 'Llama 3.1 8B (Groq)', 'groq', 'fast'),
+      createModel('mixtral-8x7b-32768', 'Mixtral 8x7B', 'groq', 'balanced'),
+      createModel('gemma-2-9b-it', 'Gemma 2 9B', 'groq', 'fast'),
+    ]
+  },
+  {
     id: 'fast',
     name: '⚡ Lightning Fast (Gemini 2.5)',
     models: [
