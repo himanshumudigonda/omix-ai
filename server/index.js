@@ -50,55 +50,118 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         if (provider === 'groq') {
-
-            // --- Model Specific Configuration ---
-            let temp = temperature || 1;
+            // --- Groq Logic ---
+            let targetModel = model;
+            let temp = temperature || 0.7;
             let maxTokens = max_tokens || 1024;
-            let reasoningEffort = undefined;
-            let topP = top_p || 1;
-            let headers = {};
-            let compoundCustom = undefined;
             let stream = true;
+            let compoundCustom = undefined;
 
-            // 1. Compound Models
-            if (model === 'groq/compound' || model === 'groq/compound-mini') {
-                headers['Groq-Model-Version'] = 'latest';
-                maxTokens = 1024;
+            // 1. Simplified Category Routing (Deterministic)
+            // We map categories directly to the best available model to avoid "router" latency/failure.
+            if (model === 'auto') {
+                targetModel = 'llama-3.3-70b-versatile'; // Best all-rounder
+                maxTokens = 4096;
+            } else if (model === 'openai') {
+                targetModel = 'openai/gpt-oss-120b'; // Best OpenAI-like
+                maxTokens = 4096;
+            } else if (model === 'meta') {
+                targetModel = 'llama-3.3-70b-versatile'; // Best Meta
+                maxTokens = 4096;
+            } else if (model === 'groq/compound' || model === 'groq/compound-mini') {
+                // Web Search / Tools
+                targetModel = model;
                 compoundCustom = { "tools": { "enabled_tools": ["web_search", "code_interpreter", "visit_website"] } };
             }
-            // 2. GPT-OSS Models
-            else if (model.startsWith('openai/gpt-oss')) {
-                temp = 1;
-                maxTokens = 8192;
-                reasoningEffort = "medium";
-            }
-            // 3. Llama 4 / Guard Models
-            else if (model.startsWith('meta-llama/llama-4') || model.startsWith('meta-llama/llama-guard')) {
-                maxTokens = 1024;
-            }
-            // 4. Prompt Guard (Classifiers)
-            else if (model.startsWith('meta-llama/llama-prompt-guard')) {
+
+            // 2. Model Specific Config
+            if (targetModel.startsWith('meta-llama/llama-prompt-guard')) {
                 maxTokens = 1;
-                stream = false; // User specified stream=False
+                stream = false;
             }
-            // 5. Qwen
-            else if (model === 'qwen/qwen3-32b') {
-                temp = 0.6;
-                maxTokens = 4096;
-                reasoningEffort = "default";
-                topP = 0.95;
+
+            console.log(`🚀 Groq Request: ${targetModel} (Original: ${model})`);
+
+            const params = {
+                messages,
+                model: targetModel,
+                temperature: temp,
+                max_completion_tokens: maxTokens,
+                top_p: top_p || 1,
+                stream: stream
+            };
+            if (compoundCustom) params.compound_custom = compoundCustom;
+
+            try {
+                const completion = await groq.chat.completions.create(params);
+
+                res.setHeader('Content-Type', 'text/event-stream');
+                res.setHeader('Cache-Control', 'no-cache');
+                res.setHeader('Connection', 'keep-alive');
+
+                if (stream) {
+                    for await (const chunk of completion) {
+                        const content = chunk.choices[0]?.delta?.content || '';
+                        if (content) {
+                            res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
+                        }
+                    }
+                } else {
+                    const content = completion.choices[0]?.message?.content || JSON.stringify(completion.choices[0]?.message);
+                    res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
+                }
+                res.write('data: [DONE]\n\n');
+                res.end();
+
+            } catch (groqError) {
+                console.error(`Groq Error (${targetModel}):`, groqError.message);
+
+                // Simple Fallback if primary fails
+                if (targetModel !== 'llama-3.1-8b-instant') {
+                    console.log("🔄 Fallback to llama-3.1-8b-instant...");
+                    try {
+                        const fallbackCompletion = await groq.chat.completions.create({
+                            messages,
+                            model: 'llama-3.1-8b-instant',
+                            temperature: 0.7,
+                            max_completion_tokens: 1024,
+                            stream: true
+                        });
+
+                        res.setHeader('Content-Type', 'text/event-stream');
+                        for await (const chunk of fallbackCompletion) {
+                            const content = chunk.choices[0]?.delta?.content || '';
+                            if (content) {
+                                res.write(`data: ${JSON.stringify({ content, model: 'llama-3.1-8b-instant' })}\n\n`);
+                            }
+                        }
+                        res.write('data: [DONE]\n\n');
+                        res.end();
+                    } catch (fallbackError) {
+                        console.error("Fallback failed:", fallbackError);
+                        res.write(`data: ${JSON.stringify({ content: "Error: AI service temporarily unavailable." })}\n\n`);
+                        res.write('data: [DONE]\n\n');
+                        res.end();
+                    }
+                } else {
+                    res.write(`data: ${JSON.stringify({ content: "Error: AI service temporarily unavailable." })}\n\n`);
+                    res.write('data: [DONE]\n\n');
+                    res.end();
+                }
             }
-            // 6. Default Llama
-            else if (model.includes('llama')) {
-                temp = 0.7;
-                maxTokens = 8192;
+
+        } else if (provider === 'gemini') {
+            // --- Gemini Logic ---
+            let targetModel = model;
+            if (model === 'gemini' || model === 'auto') {
+                targetModel = 'gemini-2.5-flash';
             }
-            // Gemini via OpenAI Compatibility Layer
-            const aiModel = model === 'auto' ? 'gemini-2.5-flash' : model;
+
+            console.log(`✨ Gemini Request: ${targetModel}`);
 
             try {
                 const stream = await gemini.chat.completions.create({
-                    model: aiModel,
+                    model: targetModel,
                     messages: messages,
                     stream: true,
                 });
@@ -110,7 +173,7 @@ app.post('/api/chat', async (req, res) => {
                 for await (const chunk of stream) {
                     const content = chunk.choices[0]?.delta?.content || '';
                     if (content) {
-                        res.write(`data: ${JSON.stringify({ content })}\n\n`);
+                        res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
                     }
                 }
                 res.write('data: [DONE]\n\n');
@@ -119,10 +182,14 @@ app.post('/api/chat', async (req, res) => {
                 console.error('Gemini Error:', geminiError);
                 res.status(500).json({ error: 'Gemini failed', details: geminiError.message });
             }
+        } else {
+            res.status(400).json({ error: 'Invalid provider' });
         }
     } catch (error) {
         console.error('API Error:', error);
-        res.status(500).json({ error: 'Failed to generate response' });
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Failed to generate response' });
+        }
     }
 });
 
@@ -138,9 +205,7 @@ app.post('/api/image', async (req, res) => {
         return res.json({ imageUrl });
     }
 
-    // For Gemini image generation, we'd need a different endpoint
-    // For now, just return error
-    res.status(501).json({ error: 'Gemini image generation not yet implemented with OpenAI compatibility layer' });
+    res.status(501).json({ error: 'Image generation not implemented for this provider' });
 });
 
 // Serve Static Files (Production)
