@@ -1,7 +1,7 @@
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-import { GEMINI_API_KEY } from "../lib/models";
+// import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+// import { GEMINI_API_KEY } from "../lib/models";
 
-const apiKey = GEMINI_API_KEY;
+// const apiKey = GEMINI_API_KEY;
 
 // Image Generation Model (Gemini 2.5 Flash Image or Nano Banana)
 const IMAGE_MODEL = 'gemini-2.5-flash-image';

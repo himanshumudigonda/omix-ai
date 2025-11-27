@@ -1,7 +1,8 @@
 import { AiModel } from '../types';
 
-export const GROQ_API_KEY = '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';
-export const GEMINI_API_KEY = 'AIzaSyBhTEPYOuNmx-SXbcXsnUSY1-M21jWKZgA';
+// API Keys should be loaded from environment variables in the backend
+// Do not expose keys in frontend code
+
 
 export interface ModelCategory {
   id: string;
@@ -20,15 +21,6 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     name: '✨ Auto-Pilot',
     models: [
       createModel('auto', 'Auto (Best)', 'groq', 'balanced')
-    ]
-  },
-  {
-    id: 'reasoning',
-    name: '🧠 High Reasoning (Gemini 3)',
-    models: [
-      createModel('gemini-3-pro-preview', 'Gemini 3 Pro (Preview)', 'gemini', 'reasoning'),
-      createModel('gemini-2.5-pro', 'Gemini 2.5 Pro', 'gemini', 'reasoning'),
-      createModel('gemini-2.0-flash-exp', 'Gemini 2.0 Flash (Exp)', 'gemini', 'reasoning'),
     ]
   },
   {
@@ -82,19 +74,19 @@ export const getBestModelForPrompt = (prompt: string): string => {
     return 'pollinations/flux-pro';
   }
 
-  // Complex tasks / Research -> High Reasoning
+  // Complex tasks / Research -> Llama 3.3 (Groq)
   if (p.includes('search') || p.includes('browse') || p.includes('analyze') || p.includes('summary') || p.length > 500) {
-    return 'gemini-3-pro-preview';
+    return 'llama-3.3-70b-versatile';
   }
 
-  // Coding & Math -> Deep Reasoning
+  // Coding & Math -> Llama 3.3 (Groq)
   if (p.includes('code') || p.includes('math') || p.includes('solve') || p.includes('logic') || p.includes('function')) {
-    return 'gemini-3-pro-preview';
+    return 'llama-3.3-70b-versatile';
   }
 
-  // Creative writing -> Versatile High Quality
+  // Creative writing -> Llama 3.3 (Groq)
   if (p.includes('story') || p.includes('poem') || p.includes('write') || p.includes('email')) {
-    return 'gemini-2.5-pro';
+    return 'llama-3.3-70b-versatile';
   }
 
   // Default -> Fast & Efficient

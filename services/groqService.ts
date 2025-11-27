@@ -1,4 +1,4 @@
-import { GROQ_API_KEY } from '../lib/models';
+// import { GROQ_API_KEY } from '../lib/models';
 
 export async function* streamGroqResponse(
   modelId: string,
