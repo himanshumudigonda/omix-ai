@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Menu, ArrowUp, Plus, Mic, Gamepad2, Trash2, X, ChevronDown, MicOff, Users } from 'lucide-react';
+import { Send, Menu, ArrowUp, Plus, Mic, Gamepad2, Trash2, X, ChevronDown, MicOff, Users, Globe } from 'lucide-react';
 import { generateImageResponse } from './services/geminiService';
 import { generateSmartResponse } from './services/aiManager';
 import { Sidebar } from './components/Sidebar';
@@ -26,6 +26,8 @@ function App() {
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES.obsidian);
   const [isFunMode, setIsFunMode] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>('auto');
+  const [activeTab, setActiveTab] = useState<'gemini' | 'openai' | 'meta'>('gemini');
+  const [useWebSearch, setUseWebSearch] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -49,6 +51,7 @@ function App() {
   const [isInputFocused, setIsInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Voice Input (STT)
   const [isListening, setIsListening] = useState(false);
@@ -98,6 +101,14 @@ function App() {
       handleStopLiveSession();
     }
   }, [mode]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 150)}px`;
+    }
+  }, [input]);
 
   // Shake to Wake Listener
   useEffect(() => {
@@ -223,13 +234,6 @@ function App() {
   };
 
   const startVoiceInput = () => {
-    // Check if we should use native audio model
-    if (selectedModelId === 'auto' || selectedModelId.includes('gemini')) {
-      // For now, we will just use the browser STT but route it to the new model in the backend
-      // In a full implementation, this would stream audio bytes.
-      // For this migration, we keep the frontend STT but ensure the backend uses the correct model.
-    }
-
     if (!('webkitSpeechRecognition' in window)) {
       alert("Voice recognition not supported in this browser.");
       return;
@@ -299,6 +303,9 @@ function App() {
     setReplyingTo(null);
     setIsProcessing(true);
 
+    // Reset height of textarea
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
     try {
       if (mode === AppMode.CHAT) {
         const history = messages.slice(-15).map(m => ({
@@ -306,7 +313,17 @@ function App() {
           parts: [{ text: m.content }]
         }));
 
-        const stream = generateSmartResponse(selectedModelId, text, history);
+        // Web Search Logic
+        let targetModelId = selectedModelId;
+        if (useWebSearch) {
+          // If the user hasn't selected a compound model, default to the main compound model
+          if (selectedModelId !== 'groq/compound' && selectedModelId !== 'groq/compound-mini') {
+            targetModelId = 'groq/compound';
+          }
+          // If they HAVE selected a compound model (e.g. mini), keep it.
+        }
+
+        const stream = generateSmartResponse(targetModelId, text, history);
 
         let aiMessageId = (Date.now() + 1).toString();
         let fullContent = '';
@@ -367,7 +384,6 @@ function App() {
         }
 
       } else if (mode === AppMode.IMAGE) {
-        // Pass selected model ID (defaulting to imagen-3 if auto/invalid)
         const imageModel = selectedModelId === 'auto' ? 'imagen-3.0-generate-001' : selectedModelId;
         const result = await generateImageResponse(text, imageModel);
 
@@ -429,7 +445,6 @@ function App() {
         currentMode={mode}
         setMode={(newMode) => {
           setMode(newMode);
-          // Reset model selection when switching modes
           if (newMode === AppMode.IMAGE) setSelectedModelId('pollinations/flux-pro');
           else setSelectedModelId('auto');
         }}
@@ -460,25 +475,45 @@ function App() {
           </div>
 
           <div className="pointer-events-auto ml-auto flex items-center gap-3">
-            {/* Model Selector (Only show in chat/image mode) */}
+            {/* Model Selector Tabs */}
             {mode !== AppMode.LIVE && (
-              <div className="relative group">
-                <select
-                  value={selectedModelId}
-                  onChange={(e) => setSelectedModelId(e.target.value)}
-                  className={`appearance-none pl-3 pr-8 py-2 rounded-lg text-xs font-medium border cursor-pointer focus:outline-none ${currentTheme.panel} ${currentTheme.border} ${currentTheme.text}`}
-                >
-                  {MODEL_CATEGORIES
-                    .filter(cat => mode === AppMode.IMAGE ? cat.id === 'image' : cat.id !== 'image')
-                    .map(category => (
-                      <optgroup key={category.id} label={category.name}>
-                        {category.models.map(m => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                      </optgroup>
-                    ))}
-                </select>
-                <ChevronDown size={14} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${currentTheme.textSecondary}`} />
+              <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md p-1 rounded-full border border-white/10">
+                {['gemini', 'openai', 'meta'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`relative p-2 rounded-full transition-all duration-300 ${activeTab === tab ? 'bg-white/20 shadow-lg scale-110' : 'hover:bg-white/10 opacity-70 hover:opacity-100'}`}
+                    title={tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  >
+                    <img
+                      src={`/assets/${tab}_icon.png`}
+                      alt={tab}
+                      className="w-6 h-6 object-contain"
+                      onError={(e) => {
+                        // Fallback if image fails
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.parentElement!.innerText = tab.charAt(0).toUpperCase();
+                      }}
+                    />
+                  </button>
+                ))}
+
+                {/* Model Dropdown for Active Tab */}
+                <div className="relative ml-2">
+                  <select
+                    value={selectedModelId}
+                    onChange={(e) => setSelectedModelId(e.target.value)}
+                    className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-medium border cursor-pointer focus:outline-none bg-transparent ${currentTheme.text}`}
+                    style={{ maxWidth: '120px' }}
+                  >
+                    {MODEL_CATEGORIES
+                      .find(cat => cat.id === activeTab)
+                      ?.models.map(m => (
+                        <option key={m.id} value={m.id} className="text-black">{m.name}</option>
+                      ))}
+                  </select>
+                  <ChevronDown size={12} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${currentTheme.textSecondary}`} />
+                </div>
               </div>
             )}
 
@@ -506,6 +541,7 @@ function App() {
         {/* Live Mode Overlay */}
         {mode === AppMode.LIVE && (
           <div className="flex-1 flex flex-col items-center justify-center relative z-10 p-6 text-center">
+            {/* ... Live Mode UI ... */}
             <div className={`relative w-48 h-48 rounded-full border-4 flex items-center justify-center mb-8 ${liveSessionActive ? 'border-green-500 animate-pulse' : 'border-gray-700'}`}>
               <div className={`w-40 h-40 rounded-full ${liveSessionActive ? 'bg-green-500/20' : 'bg-gray-800'} backdrop-blur-xl flex items-center justify-center`}>
                 {liveSessionActive ? (
@@ -522,7 +558,6 @@ function App() {
             <h2 className={`text-2xl font-bold mb-2 ${currentTheme.text}`}>{liveStatus}</h2>
             <p className={`mb-8 ${currentTheme.textSecondary}`}>Conversational mode enabled. Speak naturally.</p>
 
-            {/* Voice Selector */}
             <div className="flex items-center gap-4 mb-8 bg-black/20 p-1.5 rounded-full border border-white/10">
               <button
                 onClick={() => setLiveVoice('female')}
@@ -561,13 +596,14 @@ function App() {
               ) : (
                 <div className="space-y-6 pb-48 pt-4">
                   {messages.map(msg => (
-                    <MessageBubble
-                      key={msg.id}
-                      message={msg}
-                      theme={currentTheme}
-                      onDelete={deleteMessage}
-                      onReply={(m) => setReplyingTo(m)}
-                    />
+                    <div key={msg.id} className="break-words overflow-hidden">
+                      <MessageBubble
+                        message={msg}
+                        theme={currentTheme}
+                        onDelete={deleteMessage}
+                        onReply={(m) => setReplyingTo(m)}
+                      />
+                    </div>
                   ))}
 
                   {isProcessing && (
@@ -646,6 +682,7 @@ function App() {
                       />
                     ) : (
                       <textarea
+                        ref={textareaRef}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onFocus={() => setIsInputFocused(true)}
@@ -660,6 +697,15 @@ function App() {
                   </div>
 
                   <div className="flex items-center gap-2 pb-0.5">
+                    {/* Web Search Toggle */}
+                    <button
+                      onClick={() => setUseWebSearch(!useWebSearch)}
+                      className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${useWebSearch ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : `${currentTheme.textSecondary} hover:${currentTheme.text} hover:bg-white/10`}`}
+                      title="Web Search"
+                    >
+                      <Globe size={20} strokeWidth={2} />
+                    </button>
+
                     <button
                       onClick={startVoiceInput}
                       className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${isListening ? 'bg-red-500 text-white animate-pulse' : `${currentTheme.textSecondary} hover:${currentTheme.text} hover:bg-white/10`}`}
