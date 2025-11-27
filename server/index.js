@@ -60,12 +60,12 @@ app.post('/api/chat', async (req, res) => {
             try {
                 const modelPools = {
                     'auto': ['llama-3.3-70b-versatile', 'gemma-2-9b-it', 'openai/gpt-oss-120b', 'mixtral-8x7b-32768'],
-                    'gemini': ['gemma-2-9b-it', 'gemini-2.5-flash', 'gemini-2.5-pro'], // Gemma preferred for chat
+                    'gemini': ['gemma-2-9b-it', 'gemini-2.5-flash'],
                     'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'],
-                    'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct']
+                    'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
                 };
 
-                const pool = modelPools[model];
+                const pool = modelPools[model] || modelPools['auto'];
 
                 let systemPrompt = `
                     You are the Model Router.
@@ -75,16 +75,12 @@ app.post('/api/chat', async (req, res) => {
                     Available Models: ${pool.join(', ')}
                     
                     Task: Pick the SINGLE BEST model ID from the list.
+                    Rules:
+                    - For 'gemini' category: PREFER 'gemma-2-9b-it' for chat/creative, 'gemini-2.5-flash' for reasoning.
+                    - For 'auto': PREFER 'llama-3.3-70b-versatile' for complex tasks.
+                    
+                    Return ONLY the model ID.
                 `;
-
-                // Specific User Instruction: "uses the gemma for normal conversation"
-                if (model === 'gemini') {
-                    systemPrompt += `\nIMPORTANT: For normal conversation and questions, PREFER 'gemma-2-9b-it'. Use 'gemini-2.5-flash' only for complex reasoning or multimodal tasks.`;
-                } else if (model === 'auto') {
-                    systemPrompt += `\nPrioritize 'llama-3.3-70b-versatile' for complex tasks, 'gemma-2-9b-it' for chat.`;
-                }
-
-                systemPrompt += `\nReturn ONLY the model ID.`;
 
                 const routerCompletion = await groq.chat.completions.create({
                     messages: [{ role: "system", content: systemPrompt }],
@@ -94,32 +90,28 @@ app.post('/api/chat', async (req, res) => {
                 });
 
                 let suggestedModel = routerCompletion.choices[0]?.message?.content?.trim();
+                suggestedModel = suggestedModel?.replace(/['"]/g, '');
 
-                // Clean up response if needed (remove quotes, etc)
-                suggestedModel = suggestedModel.replace(/['"]/g, '');
-
-                if (pool.includes(suggestedModel)) {
+                if (suggestedModel && pool.includes(suggestedModel)) {
                     console.log(`👉 Router Selected: ${suggestedModel}`);
                     targetModel = suggestedModel;
                 } else {
-                    console.warn(`⚠️ Router suggested invalid model '${suggestedModel}', using default.`);
-                    // Defaults
-                    if (model === 'gemini') targetModel = 'gemma-2-9b-it';
-                    else if (model === 'auto') targetModel = 'llama-3.3-70b-versatile';
-                    else targetModel = pool[0];
+                    console.warn(`⚠️ Router returned invalid/empty model: '${suggestedModel}'. Using default.`);
+                    throw new Error("Invalid router selection");
                 }
 
             } catch (routerError) {
-                console.error("❌ Router Failed:", routerError.message);
-                // Hard Fallbacks if Router fails
+                console.error("❌ Router Failed (using fallback):", routerError.message);
+                // Guaranteed Fallbacks
                 if (model === 'gemini') targetModel = 'gemma-2-9b-it';
-                else if (model === 'auto') targetModel = 'llama-3.3-70b-versatile';
                 else if (model === 'openai') targetModel = 'openai/gpt-oss-120b';
                 else if (model === 'meta') targetModel = 'llama-3.3-70b-versatile';
+                else targetModel = 'llama-3.3-70b-versatile'; // Auto fallback
             }
         }
 
         // --- 2. Determine Provider based on Target Model ---
+        // CRITICAL: Ensure correct provider mapping
         if (targetModel.startsWith('gemini')) {
             finalProvider = 'gemini';
         } else {
