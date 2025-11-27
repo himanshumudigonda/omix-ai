@@ -674,9 +674,9 @@ function App() {
                       <GravityInput
                         value={input}
                         onChange={setInput}
-                        onEnter={handleSendMessage}
                         onFocus={() => setIsInputFocused(true)}
                         onBlur={() => setIsInputFocused(false)}
+                        onEnter={handleSendMessage}
                         placeholder="Type to drop letters..."
                         theme={currentTheme}
                       />
