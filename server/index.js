@@ -49,38 +49,98 @@ app.post('/api/chat', async (req, res) => {
     const { model, messages, temperature, max_tokens, top_p, provider } = req.body;
 
     try {
-        if (provider === 'groq') {
-            // --- Groq Logic ---
-            let targetModel = model;
+        let targetModel = model;
+        let finalProvider = provider;
+
+        // --- 1. Smart Router Logic (Compound Mini) ---
+        // If the user selected a category, we ask compound-mini to pick the best model.
+        if (['auto', 'gemini', 'openai', 'meta'].includes(model)) {
+            console.log(`🔄 Smart Router: Analyzing request for category '${model}'...`);
+
+            try {
+                const modelPools = {
+                    'auto': ['llama-3.3-70b-versatile', 'gemma-2-9b-it', 'openai/gpt-oss-120b', 'mixtral-8x7b-32768'],
+                    'gemini': ['gemma-2-9b-it', 'gemini-2.5-flash', 'gemini-2.5-pro'], // Gemma preferred for chat
+                    'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'],
+                    'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct']
+                };
+
+                const pool = modelPools[model];
+
+                let systemPrompt = `
+                    You are the Model Router.
+                    User Category: '${model}'.
+                    User Request: "${messages[messages.length - 1].content.substring(0, 300)}..."
+                    
+                    Available Models: ${pool.join(', ')}
+                    
+                    Task: Pick the SINGLE BEST model ID from the list.
+                `;
+
+                // Specific User Instruction: "uses the gemma for normal conversation"
+                if (model === 'gemini') {
+                    systemPrompt += `\nIMPORTANT: For normal conversation and questions, PREFER 'gemma-2-9b-it'. Use 'gemini-2.5-flash' only for complex reasoning or multimodal tasks.`;
+                } else if (model === 'auto') {
+                    systemPrompt += `\nPrioritize 'llama-3.3-70b-versatile' for complex tasks, 'gemma-2-9b-it' for chat.`;
+                }
+
+                systemPrompt += `\nReturn ONLY the model ID.`;
+
+                const routerCompletion = await groq.chat.completions.create({
+                    messages: [{ role: "system", content: systemPrompt }],
+                    model: 'groq/compound-mini',
+                    temperature: 0.1,
+                    max_completion_tokens: 20,
+                });
+
+                let suggestedModel = routerCompletion.choices[0]?.message?.content?.trim();
+
+                // Clean up response if needed (remove quotes, etc)
+                suggestedModel = suggestedModel.replace(/['"]/g, '');
+
+                if (pool.includes(suggestedModel)) {
+                    console.log(`👉 Router Selected: ${suggestedModel}`);
+                    targetModel = suggestedModel;
+                } else {
+                    console.warn(`⚠️ Router suggested invalid model '${suggestedModel}', using default.`);
+                    // Defaults
+                    if (model === 'gemini') targetModel = 'gemma-2-9b-it';
+                    else if (model === 'auto') targetModel = 'llama-3.3-70b-versatile';
+                    else targetModel = pool[0];
+                }
+
+            } catch (routerError) {
+                console.error("❌ Router Failed:", routerError.message);
+                // Hard Fallbacks if Router fails
+                if (model === 'gemini') targetModel = 'gemma-2-9b-it';
+                else if (model === 'auto') targetModel = 'llama-3.3-70b-versatile';
+                else if (model === 'openai') targetModel = 'openai/gpt-oss-120b';
+                else if (model === 'meta') targetModel = 'llama-3.3-70b-versatile';
+            }
+        }
+
+        // --- 2. Determine Provider based on Target Model ---
+        if (targetModel.startsWith('gemini')) {
+            finalProvider = 'gemini';
+        } else {
+            finalProvider = 'groq';
+        }
+
+        // --- 3. Execute Request ---
+        if (finalProvider === 'groq') {
+            // --- Groq Execution ---
             let temp = temperature || 0.7;
             let maxTokens = max_tokens || 1024;
             let stream = true;
             let compoundCustom = undefined;
 
-            // 1. Simplified Category Routing (Deterministic)
-            // We map categories directly to the best available model to avoid "router" latency/failure.
-            if (model === 'auto') {
-                targetModel = 'llama-3.3-70b-versatile'; // Best all-rounder
-                maxTokens = 4096;
-            } else if (model === 'openai') {
-                targetModel = 'openai/gpt-oss-120b'; // Best OpenAI-like
-                maxTokens = 4096;
-            } else if (model === 'meta') {
-                targetModel = 'llama-3.3-70b-versatile'; // Best Meta
-                maxTokens = 4096;
-            } else if (model === 'groq/compound' || model === 'groq/compound-mini') {
-                // Web Search / Tools
-                targetModel = model;
+            if (targetModel === 'groq/compound' || targetModel === 'groq/compound-mini') {
                 compoundCustom = { "tools": { "enabled_tools": ["web_search", "code_interpreter", "visit_website"] } };
             }
-
-            // 2. Model Specific Config
-            if (targetModel.startsWith('meta-llama/llama-prompt-guard')) {
-                maxTokens = 1;
-                stream = false;
+            // High spec models
+            if (targetModel.includes('70b') || targetModel.includes('120b') || targetModel.includes('gpt-oss')) {
+                maxTokens = 4096;
             }
-
-            console.log(`🚀 Groq Request: ${targetModel} (Original: ${model})`);
 
             const params = {
                 messages,
@@ -99,66 +159,25 @@ app.post('/api/chat', async (req, res) => {
                 res.setHeader('Cache-Control', 'no-cache');
                 res.setHeader('Connection', 'keep-alive');
 
-                if (stream) {
-                    for await (const chunk of completion) {
-                        const content = chunk.choices[0]?.delta?.content || '';
-                        if (content) {
-                            res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
-                        }
+                for await (const chunk of completion) {
+                    const content = chunk.choices[0]?.delta?.content || '';
+                    if (content) {
+                        res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
                     }
-                } else {
-                    const content = completion.choices[0]?.message?.content || JSON.stringify(completion.choices[0]?.message);
-                    res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
                 }
                 res.write('data: [DONE]\n\n');
                 res.end();
 
             } catch (groqError) {
-                console.error(`Groq Error (${targetModel}):`, groqError.message);
-
-                // Simple Fallback if primary fails
-                if (targetModel !== 'llama-3.1-8b-instant') {
-                    console.log("🔄 Fallback to llama-3.1-8b-instant...");
-                    try {
-                        const fallbackCompletion = await groq.chat.completions.create({
-                            messages,
-                            model: 'llama-3.1-8b-instant',
-                            temperature: 0.7,
-                            max_completion_tokens: 1024,
-                            stream: true
-                        });
-
-                        res.setHeader('Content-Type', 'text/event-stream');
-                        for await (const chunk of fallbackCompletion) {
-                            const content = chunk.choices[0]?.delta?.content || '';
-                            if (content) {
-                                res.write(`data: ${JSON.stringify({ content, model: 'llama-3.1-8b-instant' })}\n\n`);
-                            }
-                        }
-                        res.write('data: [DONE]\n\n');
-                        res.end();
-                    } catch (fallbackError) {
-                        console.error("Fallback failed:", fallbackError);
-                        res.write(`data: ${JSON.stringify({ content: "Error: AI service temporarily unavailable." })}\n\n`);
-                        res.write('data: [DONE]\n\n');
-                        res.end();
-                    }
-                } else {
-                    res.write(`data: ${JSON.stringify({ content: "Error: AI service temporarily unavailable." })}\n\n`);
-                    res.write('data: [DONE]\n\n');
-                    res.end();
-                }
+                console.error(`Groq Execution Error (${targetModel}):`, groqError.message);
+                res.write(`data: ${JSON.stringify({ content: "Error: Failed to generate response. Please try again." })}\n\n`);
+                res.write('data: [DONE]\n\n');
+                res.end();
             }
 
-        } else if (provider === 'gemini') {
-            // --- Gemini Logic ---
-            let targetModel = model;
-            if (model === 'gemini' || model === 'auto') {
-                targetModel = 'gemini-2.5-flash';
-            }
-
-            console.log(`✨ Gemini Request: ${targetModel}`);
-
+        } else if (finalProvider === 'gemini') {
+            // --- Gemini Execution ---
+            console.log(`✨ Executing via Gemini: ${targetModel}`);
             try {
                 const stream = await gemini.chat.completions.create({
                     model: targetModel,
@@ -179,12 +198,11 @@ app.post('/api/chat', async (req, res) => {
                 res.write('data: [DONE]\n\n');
                 res.end();
             } catch (geminiError) {
-                console.error('Gemini Error:', geminiError);
+                console.error('Gemini Execution Error:', geminiError);
                 res.status(500).json({ error: 'Gemini failed', details: geminiError.message });
             }
-        } else {
-            res.status(400).json({ error: 'Invalid provider' });
         }
+
     } catch (error) {
         console.error('API Error:', error);
         if (!res.headersSent) {
