@@ -4,40 +4,21 @@ const isMobile = () => {
          window.innerWidth < 768;
 };
 
-// Split text into smaller chunks for better mobile TTS
-const splitIntoChunks = (text: string, maxLength: number = 100): string[] => {
-  const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-  const chunks: string[] = [];
-  let currentChunk = '';
+let resumeTimer: ReturnType<typeof setInterval> | null = null;
 
-  for (const sentence of sentences) {
-    if ((currentChunk + sentence).length <= maxLength) {
-      currentChunk += sentence;
-    } else {
-      if (currentChunk) chunks.push(currentChunk.trim());
-      currentChunk = sentence;
-    }
-  }
-  if (currentChunk) chunks.push(currentChunk.trim());
+export const speak = (text: string) => {
+  if (!window.speechSynthesis) return;
+
+  // Cancel any currently playing speech
+  stopSpeaking();
+
+  // Limit text length on mobile to prevent issues
+  const maxLength = isMobile() ? 200 : 500;
+  const textToSpeak = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
   
-  return chunks;
-};
-
-let isSpeaking = false;
-let speechQueue: string[] = [];
-
-const speakNext = () => {
-  if (speechQueue.length === 0 || !isSpeaking) {
-    isSpeaking = false;
-    return;
-  }
-
-  const text = speechQueue.shift();
-  if (!text) return;
-
-  const utterance = new SpeechSynthesisUtterance(text);
-  
-  // Get voices (may need to wait for them to load)
+  // Get voices
   const voices = window.speechSynthesis.getVoices();
   const preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
                          voices.find(v => v.lang.startsWith('en-US')) ||
@@ -48,49 +29,49 @@ const speakNext = () => {
     utterance.voice = preferredVoice;
   }
 
-  // Slower rate on mobile for better quality
-  utterance.rate = isMobile() ? 0.9 : 1.1;
-  utterance.pitch = 1.0;
-  utterance.volume = 1.0;
+  // Mobile-optimized settings
+  if (isMobile()) {
+    utterance.rate = 0.85;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+  } else {
+    utterance.rate = 1.1;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+  }
 
   utterance.onend = () => {
-    // Small delay between chunks on mobile
-    setTimeout(() => speakNext(), isMobile() ? 100 : 50);
+    if (resumeTimer) {
+      clearInterval(resumeTimer);
+      resumeTimer = null;
+    }
   };
 
-  utterance.onerror = (e) => {
-    console.log('[TTS] Error:', e.error);
-    // Try next chunk even if this one failed
-    setTimeout(() => speakNext(), 100);
+  utterance.onerror = () => {
+    if (resumeTimer) {
+      clearInterval(resumeTimer);
+      resumeTimer = null;
+    }
   };
+
+  // Chrome mobile bug fix: pause/resume to prevent audio cutting out
+  if (isMobile()) {
+    resumeTimer = setInterval(() => {
+      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+        window.speechSynthesis.pause();
+        window.speechSynthesis.resume();
+      }
+    }, 3000);
+  }
 
   window.speechSynthesis.speak(utterance);
 };
 
-export const speak = (text: string) => {
-  if (!window.speechSynthesis) return;
-
-  // Cancel any currently playing speech
-  stopSpeaking();
-
-  // Wait a moment for cancel to complete
-  setTimeout(() => {
-    isSpeaking = true;
-    
-    // On mobile, split into smaller chunks to prevent stuttering
-    if (isMobile()) {
-      speechQueue = splitIntoChunks(text, 80);
-    } else {
-      speechQueue = splitIntoChunks(text, 150);
-    }
-    
-    speakNext();
-  }, 50);
-};
-
 export const stopSpeaking = () => {
-  isSpeaking = false;
-  speechQueue = [];
+  if (resumeTimer) {
+    clearInterval(resumeTimer);
+    resumeTimer = null;
+  }
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
