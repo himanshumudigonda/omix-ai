@@ -95,170 +95,112 @@ app.get('/api/health', (req, res) => {
 app.post('/api/chat', async (req, res) => {
     const { model, messages, temperature, max_tokens, top_p, provider } = req.body;
 
-    try {
-        let targetModel = model;
-        let finalProvider = provider;
+    // Define model fallback chains for each category
+    const fallbackChains = {
+        'auto': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+        'gemini': ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemma-3-27b', 'gemma-3-12b', 'gemma-3-4b', 'gemma-3-1b'],
+        'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'openai/gpt-oss-safeguard-20b'],
+        'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'],
+        'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905']
+    };
 
-        // --- 1. Smart Router Logic ---
-        // If the user selected a category, we ask a fast model to pick the best model.
-        if (['auto', 'gemini', 'openai', 'meta', 'moonshot'].includes(model)) {
-            console.log(`🔄 Smart Router: Analyzing request for category '${model}'...`);
-
-            try {
-                const modelPools = {
-                    'auto': ['groq/compound', 'groq/compound-mini'],
-                    'gemini': ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemma-3-27b', 'gemma-3-12b', 'gemma-3-4b'],
-                    'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'openai/gpt-oss-safeguard-20b'],
-                    'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'],
-                    'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905']
-                };
-
-                const pool = modelPools[model] || modelPools['auto'];
-
-                let systemPrompt = `
-                    You are the Model Router.
-                    User Category: '${model}'.
-                    User Request: "${messages[messages.length - 1].content.substring(0, 300)}..."
-                    
-                    Available Models: ${pool.join(', ')}
-                    
-                    Task: Pick the SINGLE BEST model ID from the list.
-                    Rules:
-                    - For 'auto' category: PREFER 'groq/compound' for complex tasks, 'groq/compound-mini' for speed.
-                    - For 'gemini' category: PREFER 'gemini-2.5-flash' for complex reasoning.
-                    - For 'meta' category: PREFER 'llama-3.3-70b-versatile' for complex tasks.
-                    
-                    Return ONLY the model ID.
-                `;
-
-                const routerCompletion = await groq.chat.completions.create({
-                    messages: [{ role: "system", content: systemPrompt }],
-                    model: 'llama-3.1-8b-instant', // Using a fast, real model for routing
-                    temperature: 0.1,
-                    max_completion_tokens: 20,
-                });
-
-                let suggestedModel = routerCompletion.choices[0]?.message?.content?.trim();
-                suggestedModel = suggestedModel?.replace(/['"]/g, '');
-
-                if (suggestedModel && pool.includes(suggestedModel)) {
-                    console.log(`👉 Router Selected: ${suggestedModel}`);
-                    targetModel = suggestedModel;
-                } else {
-                    console.warn(`⚠️ Router returned invalid/empty model: '${suggestedModel}'. Using default.`);
-                    throw new Error("Invalid router selection");
-                }
-
-            } catch (routerError) {
-                console.error("❌ Router Failed (using fallback):", routerError.message);
-                // Guaranteed Fallbacks
-                if (model === 'gemini') targetModel = 'gemini-2.5-flash';
-                else if (model === 'openai') targetModel = 'openai/gpt-oss-120b';
-                else if (model === 'meta') targetModel = 'llama-3.3-70b-versatile';
-                else if (model === 'moonshot') targetModel = 'moonshotai/kimi-k2-instruct';
-                else targetModel = 'groq/compound-mini'; // Auto fallback
-            }
+    // Helper to determine provider
+    const getProvider = (modelId) => {
+        if (modelId.startsWith('gemini') || modelId.startsWith('gemma-')) {
+            return 'gemini';
         }
+        return 'groq';
+    };
 
-        // --- 2. Determine Provider based on Target Model ---
-        // CRITICAL: Ensure correct provider mapping
-        // Gemini/Gemma models from Google go to 'gemini' provider
-        if (targetModel.startsWith('gemini') || targetModel.startsWith('gemma-')) {
-            finalProvider = 'gemini';
-        } else {
-            finalProvider = 'groq';
-        }
+    // Helper to execute a single model request
+    const executeModel = async (targetModel, isRetry = false) => {
+        const finalProvider = getProvider(targetModel);
+        console.log(`${isRetry ? '🔄 Retrying' : '🚀 Executing'}: ${targetModel} via ${finalProvider}`);
 
-        // --- 3. Execute Request ---
         if (finalProvider === 'groq') {
-            // --- Groq Execution ---
-            let temp = temperature || 0.7;
-            let maxTokens = max_tokens || 1024;
-            let stream = true;
-            let compoundCustom = undefined;
-            let extraHeaders = {};
-
-            // Special handling for Compound models
-            if (targetModel === 'groq/compound' || targetModel === 'groq/compound-mini') {
-                compoundCustom = { "tools": { "enabled_tools": ["web_search", "code_interpreter", "visit_website"] } };
-                extraHeaders = { "Groq-Model-Version": "latest" };
-                temp = 1;
-            }
-            
-            // High spec models / Reasoning models
-            if (targetModel.includes('70b') || targetModel.includes('120b') || targetModel.includes('gpt-oss') || targetModel.includes('kimi') || targetModel.includes('maverick')) {
-                maxTokens = 8192; // Increased for larger models
-            }
-
             const params = {
                 messages,
                 model: targetModel,
-                temperature: temp,
-                max_completion_tokens: maxTokens,
+                temperature: temperature || 0.7,
+                max_completion_tokens: max_tokens || 4096,
                 top_p: top_p || 1,
-                stream: stream
+                stream: true
             };
-            
-            // Add compound_custom if applicable
-            if (compoundCustom) {
-                params.compound_custom = compoundCustom;
+
+            return await groq.chat.completions.create(params);
+        } else {
+            return await gemini.chat.completions.create({
+                model: targetModel,
+                messages: messages,
+                stream: true,
+            });
+        }
+    };
+
+    try {
+        let targetModel = model;
+        let fallbackList = [];
+
+        // If user selected a category (auto, gemini, etc.), get the fallback chain
+        if (fallbackChains[model]) {
+            fallbackList = [...fallbackChains[model]];
+            targetModel = fallbackList.shift(); // Start with the first model
+        } else {
+            // User selected a specific model, create fallback based on its provider
+            const modelProvider = getProvider(model);
+            if (modelProvider === 'gemini') {
+                fallbackList = fallbackChains['gemini'].filter(m => m !== model);
+            } else {
+                fallbackList = fallbackChains['auto'].filter(m => m !== model);
             }
+        }
 
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        let success = false;
+        let lastError = null;
+
+        // Try the target model, then fallbacks
+        const modelsToTry = [targetModel, ...fallbackList];
+        
+        for (const currentModel of modelsToTry) {
             try {
-                const completion = await groq.chat.completions.create(params, { headers: extraHeaders });
-
-                res.setHeader('Content-Type', 'text/event-stream');
-                res.setHeader('Cache-Control', 'no-cache');
-                res.setHeader('Connection', 'keep-alive');
+                const completion = await executeModel(currentModel, currentModel !== targetModel);
 
                 for await (const chunk of completion) {
                     const content = chunk.choices[0]?.delta?.content || '';
                     if (content) {
-                        res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
+                        res.write(`data: ${JSON.stringify({ content, model: currentModel })}\n\n`);
                     }
                 }
-                res.write('data: [DONE]\n\n');
-                res.end();
+                
+                success = true;
+                break; // Success, exit the loop
 
-            } catch (groqError) {
-                console.error(`Groq Execution Error (${targetModel}):`, groqError.message);
-                res.write(`data: ${JSON.stringify({ content: "Error: Failed to generate response. Please try again." })}\n\n`);
-                res.write('data: [DONE]\n\n');
-                res.end();
-            }
-
-        } else if (finalProvider === 'gemini') {
-            // --- Gemini Execution ---
-            console.log(`✨ Executing via Gemini: ${targetModel}`);
-            try {
-                const stream = await gemini.chat.completions.create({
-                    model: targetModel,
-                    messages: messages,
-                    stream: true,
-                });
-
-                res.setHeader('Content-Type', 'text/event-stream');
-                res.setHeader('Cache-Control', 'no-cache');
-                res.setHeader('Connection', 'keep-alive');
-
-                for await (const chunk of stream) {
-                    const content = chunk.choices[0]?.delta?.content || '';
-                    if (content) {
-                        res.write(`data: ${JSON.stringify({ content, model: targetModel })}\n\n`);
-                    }
-                }
-                res.write('data: [DONE]\n\n');
-                res.end();
-            } catch (geminiError) {
-                console.error('Gemini Execution Error:', geminiError);
-                res.status(500).json({ error: 'Gemini failed', details: geminiError.message });
+            } catch (modelError) {
+                console.error(`❌ Model ${currentModel} failed:`, modelError.message);
+                lastError = modelError;
+                // Continue to next model in fallback chain
             }
         }
+
+        if (!success) {
+            res.write(`data: ${JSON.stringify({ content: "All models are currently unavailable. Please try again later." })}\n\n`);
+        }
+
+        res.write('data: [DONE]\n\n');
+        res.end();
 
     } catch (error) {
         console.error('API Error:', error);
         if (!res.headersSent) {
             res.status(500).json({ error: 'Failed to generate response' });
+        } else {
+            res.write(`data: ${JSON.stringify({ content: "Error occurred. Please try again." })}\n\n`);
+            res.write('data: [DONE]\n\n');
+            res.end();
         }
     }
 });

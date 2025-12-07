@@ -19,10 +19,7 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
   {
     id: 'auto',
     name: 'Auto',
-    models: [
-      createModel('groq/compound', 'Compound (Web Search)', 'groq', 'balanced'),
-      createModel('groq/compound-mini', 'Compound Mini', 'groq', 'fast'),
-    ]
+    models: [] // Auto mode doesn't show individual models - it automatically picks the best one
   },
   {
     id: 'gemini',
