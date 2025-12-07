@@ -1,4 +1,16 @@
+// Check if device is mobile
+const isMobile = () => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         window.innerWidth < 768;
+};
+
 export const speak = (text: string) => {
+  // Disable TTS on mobile to prevent stuttering/breaking voice
+  if (isMobile()) {
+    console.log('[TTS] Disabled on mobile device');
+    return;
+  }
+
   if (!window.speechSynthesis) return;
 
   // Cancel any currently playing speech
