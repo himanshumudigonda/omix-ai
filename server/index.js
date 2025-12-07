@@ -107,7 +107,7 @@ app.post('/api/chat', async (req, res) => {
             try {
                 const modelPools = {
                     'auto': ['groq/compound', 'groq/compound-mini'],
-                    'gemini': ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+                    'gemini': ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemma-3-27b', 'gemma-3-12b', 'gemma-3-4b'],
                     'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'openai/gpt-oss-safeguard-20b'],
                     'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'],
                     'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905']
@@ -152,7 +152,7 @@ app.post('/api/chat', async (req, res) => {
             } catch (routerError) {
                 console.error("❌ Router Failed (using fallback):", routerError.message);
                 // Guaranteed Fallbacks
-                if (model === 'gemini') targetModel = 'gemini-1.5-flash';
+                if (model === 'gemini') targetModel = 'gemini-2.5-flash';
                 else if (model === 'openai') targetModel = 'openai/gpt-oss-120b';
                 else if (model === 'meta') targetModel = 'llama-3.3-70b-versatile';
                 else if (model === 'moonshot') targetModel = 'moonshotai/kimi-k2-instruct';
@@ -162,8 +162,8 @@ app.post('/api/chat', async (req, res) => {
 
         // --- 2. Determine Provider based on Target Model ---
         // CRITICAL: Ensure correct provider mapping
-        // Gemini models from Google go to 'gemini' provider
-        if (targetModel.startsWith('gemini')) {
+        // Gemini/Gemma models from Google go to 'gemini' provider
+        if (targetModel.startsWith('gemini') || targetModel.startsWith('gemma-')) {
             finalProvider = 'gemini';
         } else {
             finalProvider = 'groq';
