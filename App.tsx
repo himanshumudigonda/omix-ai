@@ -320,10 +320,14 @@ function App() {
           parts: [{ text: m.content }]
         }));
 
-        // Web Search Logic
+        // Web Search Logic - Use Groq Compound models when web search is enabled
         let targetModelId = selectedModelId;
-        // Web search logic temporarily disabled until new provider integration
-        // if (useWebSearch) { ... }
+        if (useWebSearch) {
+          // Use groq/compound or groq/compound-mini for web search
+          // compound for longer/complex queries, compound-mini for quick searches
+          const isQuickSearch = text.length < 100;
+          targetModelId = isQuickSearch ? 'groq/compound-mini' : 'groq/compound';
+        }
 
         const stream = generateSmartResponse(targetModelId, text, history);
 
