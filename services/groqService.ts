@@ -1,4 +1,4 @@
-// import { GROQ_API_KEY } from '../lib/models';
+import { API_ENDPOINTS } from '../lib/api';
 
 export async function* streamGroqResponse(
   modelId: string,
@@ -14,7 +14,7 @@ export async function* streamGroqResponse(
   messages.push({ role: 'user', content: prompt });
 
   try {
-    const response = await fetch('/api/chat', {
+    const response = await fetch(API_ENDPOINTS.chat, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -1,3 +1,5 @@
+import { getWebSocketUrl } from '../lib/api';
+
 export type VoiceGender = 'male' | 'female';
 
 let ws: WebSocket | null = null;
@@ -19,11 +21,12 @@ export const connectLiveSession = async (
     // Initialize Audio Context for playback (Gemini usually sends 24kHz)
     audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    // Use configurable WebSocket URL for split deployment
+    const wsUrl = getWebSocketUrl();
     // In development, we might be on port 5173 (Vite) but server is 3000
-    const host = window.location.hostname === 'localhost' ? 'localhost:3000' : window.location.host;
+    const finalWsUrl = window.location.hostname === 'localhost' ? 'ws://localhost:3000' : wsUrl;
     
-    ws = new WebSocket(`${protocol}//${host}`);
+    ws = new WebSocket(finalWsUrl);
 
     ws.onopen = () => {
       console.log("WebSocket Connected");

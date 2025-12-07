@@ -1,10 +1,4 @@
-// import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
-// import { GEMINI_API_KEY } from "../lib/models";
-
-// const apiKey = GEMINI_API_KEY;
-
-// Image Generation Model (Gemini 2.5 Flash Image or Nano Banana)
-// const IMAGE_MODEL = 'gemini-2.5-flash-image';
+import { API_ENDPOINTS } from '../lib/api';
 
 export async function* streamTextResponse(
   modelId: string,
@@ -20,7 +14,7 @@ export async function* streamTextResponse(
   messages.push({ role: 'user', content: prompt });
 
   try {
-    const response = await fetch('/api/chat', {
+    const response = await fetch(API_ENDPOINTS.chat, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -81,7 +75,7 @@ export const generateImageResponse = async (prompt: string, modelId: string = 'i
   }
 
   try {
-    const response = await fetch('/api/image', {
+    const response = await fetch(API_ENDPOINTS.image, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, model: modelId })
