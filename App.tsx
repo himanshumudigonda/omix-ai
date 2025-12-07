@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Menu, ArrowUp, Plus, Mic, Gamepad2, Trash2, X, ChevronDown, MicOff, Users, Globe } from 'lucide-react';
+import { Send, Menu, ArrowUp, Plus, Mic, Gamepad2, Trash2, X, ChevronDown, Users, Globe } from 'lucide-react';
 import { generateImageResponse } from './services/geminiService';
 import { generateSmartResponse } from './services/aiManager';
 import { Sidebar } from './components/Sidebar';
@@ -16,8 +16,7 @@ import { THEMES } from './lib/themes';
 import { FunAvatar } from './components/FunAvatar';
 import { speak, stopSpeaking } from './services/tts';
 import { analyzeSentiment, triggerConfetti } from './lib/utils';
-import { MODEL_CATEGORIES, LIVE_MODELS } from './lib/models';
-import { connectLiveSession, disconnectLiveSession, VoiceGender } from './services/liveService';
+import { MODEL_CATEGORIES } from './lib/models';
 
 function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -43,11 +42,7 @@ function App() {
   const [currentMood, setCurrentMood] = useState<Mood>('neutral');
   const [isBlackHoleActive, setIsBlackHoleActive] = useState(false);
 
-  // Live Mode State
-  const [liveSessionActive, setLiveSessionActive] = useState(false);
-  const [liveStatus, setLiveStatus] = useState<string>('Disconnected');
-  const [liveVoice, setLiveVoice] = useState<VoiceGender>('female');
-  const [liveModel, setLiveModel] = useState<string>(LIVE_MODELS[0].id);
+
 
   const [isInputFocused, setIsInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -90,18 +85,7 @@ function App() {
     }
   }, [currentTheme]);
 
-  // Clean up live session on unmount or mode change
-  useEffect(() => {
-    return () => {
-      disconnectLiveSession();
-    };
-  }, []);
 
-  useEffect(() => {
-    if (mode !== AppMode.LIVE && liveSessionActive) {
-      handleStopLiveSession();
-    }
-  }, [mode]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -250,28 +234,6 @@ function App() {
       setInput(prev => prev + (prev ? ' ' : '') + text);
     };
     recognition.start();
-  };
-
-  // Live Mode Logic
-  const liveRecognitionRef = useRef<any>(null);
-
-  const handleStartLiveSession = () => {
-    setLiveSessionActive(true);
-    connectLiveSession(liveVoice, liveModel, (status) => {
-      setLiveStatus(status);
-
-      if (status === 'Disconnected' || status.includes('Error')) {
-        setLiveSessionActive(false);
-      }
-    });
-  };
-
-  // Live listening logic moved to liveService.ts
-
-  const handleStopLiveSession = () => {
-    disconnectLiveSession();
-    setLiveSessionActive(false);
-    setLiveStatus('Disconnected');
   };
 
   const handleSendMessage = async (text: string = input) => {
@@ -485,50 +447,63 @@ function App() {
 
           <div className="pointer-events-auto ml-auto flex items-center gap-3">
             {/* Model Selector Tabs */}
-            {mode !== AppMode.LIVE && (
-              <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md p-1 rounded-full border border-white/10">
-                {['auto', 'gemini', 'openai', 'meta', 'moonshot'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab as any)}
-                    className={`relative p-2 rounded-full transition-all duration-300 ${activeTab === tab ? 'bg-white/20 shadow-lg scale-110' : 'hover:bg-white/10 opacity-70 hover:opacity-100'}`}
-                    title={tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  >
-                    {tab === 'auto' ? (
-                      <div className="w-6 h-6 flex items-center justify-center font-bold text-xs">A</div>
-                    ) : (
-                      <img
-                        src={`/assets/${tab}_icon.png`}
-                        alt={tab}
-                        className="w-6 h-6 object-contain"
-                        onError={(e) => {
-                          // Fallback if image fails
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.parentElement!.innerText = tab.charAt(0).toUpperCase();
-                        }}
-                      />
-                    )}
-                  </button>
-                ))}
+            <div className="flex items-center gap-1 md:gap-2 bg-black/20 backdrop-blur-md p-1 rounded-full border border-white/10">
+              {['auto', 'gemini', 'openai', 'meta', 'moonshot', 'qwen'].map((tab) => {
+                // Short labels for mobile
+                const tabLabels: Record<string, string> = {
+                  'auto': 'A',
+                  'gemini': 'G',
+                  'openai': 'O',
+                  'meta': 'M',
+                  'moonshot': '🌙',
+                  'qwen': 'Q'
+                };
+                const tabColors: Record<string, string> = {
+                  'auto': 'bg-gradient-to-r from-blue-500 to-purple-500',
+                  'gemini': 'bg-blue-500',
+                  'openai': 'bg-green-500',
+                  'meta': 'bg-blue-600',
+                  'moonshot': 'bg-yellow-500',
+                  'qwen': 'bg-purple-500'
+                };
+                return (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setActiveTab(tab as any);
+                        // Auto-select first model in the new tab
+                        const category = MODEL_CATEGORIES.find(c => c.id === tab);
+                        if (category && category.models.length > 0) {
+                          setSelectedModelId(category.models[0].id);
+                        } else {
+                          setSelectedModelId(tab); // Use tab name as model ID for auto
+                        }
+                      }}
+                      className={`relative w-7 h-7 md:w-8 md:h-8 rounded-full transition-all duration-300 flex items-center justify-center text-xs md:text-sm font-bold ${activeTab === tab ? `${tabColors[tab]} text-white shadow-lg scale-110` : 'bg-white/10 hover:bg-white/20 opacity-70 hover:opacity-100'}`}
+                      title={tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    >
+                      {tabLabels[tab]}
+                    </button>
+                  );
+                })}
 
-                {/* Model Dropdown for Active Tab */}
-                <div className="relative ml-2">
-                  <select
-                    value={selectedModelId}
-                    onChange={(e) => setSelectedModelId(e.target.value)}
-                    className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs font-medium border cursor-pointer focus:outline-none bg-transparent ${currentTheme.text}`}
-                    style={{ maxWidth: '120px' }}
-                  >
-                    {MODEL_CATEGORIES
-                      .find(cat => cat.id === activeTab)
-                      ?.models.map(m => (
-                        <option key={m.id} value={m.id} className="text-black">{m.name}</option>
-                      ))}
-                  </select>
-                  <ChevronDown size={12} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${currentTheme.textSecondary}`} />
-                </div>
+              {/* Model Dropdown for Active Tab */}
+              <div className="relative ml-1 md:ml-2">
+                <select
+                  value={selectedModelId}
+                  onChange={(e) => setSelectedModelId(e.target.value)}
+                  className={`appearance-none pl-2 pr-6 md:pl-3 md:pr-8 py-1 md:py-1.5 rounded-full text-[10px] md:text-xs font-medium border cursor-pointer focus:outline-none bg-transparent ${currentTheme.text}`}
+                  style={{ maxWidth: '90px' }}
+                >
+                  {MODEL_CATEGORIES
+                    .find(cat => cat.id === activeTab)
+                    ?.models.map(m => (
+                      <option key={m.id} value={m.id} className="text-black">{m.name}</option>
+                    ))}
+                </select>
+                <ChevronDown size={12} className={`absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none ${currentTheme.textSecondary}`} />
               </div>
-            )}
+            </div>
 
             {messages.length > 0 && isFunMode && (
               <button
@@ -551,88 +526,28 @@ function App() {
           </div>
         </header>
 
-        {/* Live Mode Overlay */}
-        {mode === AppMode.LIVE && (
-          <div className="flex-1 flex flex-col items-center justify-center relative z-10 p-6 text-center">
-            {/* ... Live Mode UI ... */}
-            <div className={`relative w-48 h-48 rounded-full border-4 flex items-center justify-center mb-8 ${liveSessionActive ? 'border-green-500 animate-pulse' : 'border-gray-700'}`}>
-              <div className={`w-40 h-40 rounded-full ${liveSessionActive ? 'bg-green-500/20' : 'bg-gray-800'} backdrop-blur-xl flex items-center justify-center`}>
-                {liveSessionActive ? (
-                  <div className="space-y-1">
-                    <div className="w-16 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <div className="w-24 h-2 bg-green-400 rounded-full animate-pulse delay-75"></div>
-                    <div className="w-10 h-2 bg-green-400 rounded-full animate-pulse delay-150"></div>
-                  </div>
-                ) : (
-                  <MicOff size={48} className="opacity-50" />
-                )}
-              </div>
-            </div>
-            <h2 className={`text-2xl font-bold mb-2 ${currentTheme.text}`}>{liveStatus}</h2>
-            <p className={`mb-8 ${currentTheme.textSecondary}`}>Conversational mode enabled. Speak naturally.</p>
-
-            {/* Live Model Selector */}
-            <div className="mb-6 relative">
-              <select
-                value={liveModel}
-                onChange={(e) => setLiveModel(e.target.value)}
-                disabled={liveSessionActive}
-                className={`appearance-none pl-4 pr-10 py-2 rounded-full text-sm font-medium border cursor-pointer focus:outline-none bg-black/20 border-white/10 ${currentTheme.text} ${liveSessionActive ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/30'}`}
-              >
-                {LIVE_MODELS.map(m => (
-                  <option key={m.id} value={m.id} className="text-black">{m.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${currentTheme.textSecondary}`} />
-            </div>
-
-            <div className="flex items-center gap-4 mb-8 bg-black/20 p-1.5 rounded-full border border-white/10">
-              <button
-                onClick={() => setLiveVoice('female')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${liveVoice === 'female' ? 'bg-pink-500 text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                Sweet (Female)
-              </button>
-              <button
-                onClick={() => setLiveVoice('male')}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${liveVoice === 'male' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
-              >
-                Huge (Male)
-              </button>
-            </div>
-
-            <button
-              onClick={liveSessionActive ? handleStopLiveSession : handleStartLiveSession}
-              className={`px-8 py-3 rounded-full font-bold text-lg shadow-xl transition-transform hover:scale-105 ${liveSessionActive ? 'bg-red-500 text-white' : 'bg-green-500 text-black'}`}
-            >
-              {liveSessionActive ? 'End Session' : 'Start Live Conversation'}
-            </button>
-          </div>
-        )}
-
         {/* Chat Area */}
-        {mode !== AppMode.LIVE && (
-          <div
-            ref={chatContainerRef}
-            className={`flex-1 overflow-y-auto pt-20 px-4 scroll-smooth custom-scrollbar liquid-scroll ${isBlackHoleActive ? 'animate-black-hole' : ''}`}
-          >
-            <div className="max-w-4xl mx-auto min-h-full flex flex-col justify-end">
-              {messages.length === 0 ? (
-                <div className="flex-1 flex items-center justify-center w-full">
-                  <WelcomeScreen userName={user.name.split(' ')[0]} onQuickAction={handleSendMessage} theme={currentTheme} />
-                </div>
-              ) : (
-                <div className="space-y-6 pb-48 pt-4">
-                  {messages.map(msg => (
-                    <div key={msg.id} className="break-words overflow-hidden">
-                      <MessageBubble
-                        message={msg}
-                        theme={currentTheme}
-                        onDelete={deleteMessage}
-                        onReply={(m) => setReplyingTo(m)}
-                      />
-                    </div>
-                  ))}
+        <div
+          ref={chatContainerRef}
+          className={`flex-1 overflow-y-auto pt-20 px-4 scroll-smooth custom-scrollbar liquid-scroll ${isBlackHoleActive ? 'animate-black-hole' : ''}`}
+        >
+          <div className="max-w-4xl mx-auto min-h-full flex flex-col justify-end">
+            {messages.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center w-full">
+                <WelcomeScreen userName={user.name.split(' ')[0]} onQuickAction={handleSendMessage} theme={currentTheme} />
+              </div>
+            ) : (
+              <div className="space-y-6 pb-48 pt-4">
+                {messages.map(msg => (
+                  <div key={msg.id} className="break-words overflow-hidden">
+                    <MessageBubble
+                      message={msg}
+                      theme={currentTheme}
+                      onDelete={deleteMessage}
+                      onReply={(m) => setReplyingTo(m)}
+                    />
+                  </div>
+                ))}
 
                   {isProcessing && (
                     <div className="flex justify-start mb-6 animate-fade-in pl-1">
@@ -662,15 +577,13 @@ function App() {
               )}
             </div>
           </div>
-        )}
 
         {/* Input Area */}
-        {mode !== AppMode.LIVE && (
-          <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 pb-6 md:pb-10 pointer-events-none bg-gradient-to-t ${currentTheme.type === 'dark' ? 'from-black via-black/90 to-transparent' : 'from-white via-white/90 to-transparent'}`}>
-            <div className="max-w-4xl mx-auto pointer-events-auto transition-all duration-300 ease-out">
-              {/* Replying Indicator */}
-              {replyingTo && (
-                <div className={`mx-4 mb-2 p-3 rounded-t-xl backdrop-blur-md border border-b-0 flex justify-between items-center ${currentTheme.panel} ${currentTheme.border}`}>
+        <div className={`absolute bottom-0 left-0 right-0 z-20 p-4 pb-6 md:pb-10 pointer-events-none bg-gradient-to-t ${currentTheme.type === 'dark' ? 'from-black via-black/90 to-transparent' : 'from-white via-white/90 to-transparent'}`}>
+          <div className="max-w-4xl mx-auto pointer-events-auto transition-all duration-300 ease-out">
+            {/* Replying Indicator */}
+            {replyingTo && (
+              <div className={`mx-4 mb-2 p-3 rounded-t-xl backdrop-blur-md border border-b-0 flex justify-between items-center ${currentTheme.panel} ${currentTheme.border}`}>
                   <div className="flex flex-col text-xs">
                     <span className={`${currentTheme.textSecondary} font-bold`}>Replying to {replyingTo.type === MessageType.USER ? 'You' : 'Omix'}</span>
                     <span className={`${currentTheme.text} truncate max-w-xs opacity-80`}>{replyingTo.content}</span>
@@ -758,7 +671,7 @@ function App() {
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

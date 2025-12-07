@@ -112,22 +112,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, theme, on
 
         {/* Bubble */}
         <div className={`
-          relative p-4 transition-all duration-300 overflow-visible group/bubble
-          rounded-2xl shadow-sm
+          relative p-3 md:p-4 transition-all duration-300 overflow-hidden group/bubble
+          rounded-2xl shadow-sm w-full
           ${isUser 
             ? `${theme.bubbleUser} rounded-tr-sm` 
             : `${theme.bubbleAi} rounded-tl-sm`}
         `}>
           
-          {/* Actions Bar (Reply / Copy) */}
-          <div className={`absolute -top-8 ${isUser ? 'right-0' : 'left-0'} opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 bg-black/50 backdrop-blur-md rounded-full px-2 py-1 z-10`}>
-             <button onClick={() => onReply(message)} className="p-1.5 text-white hover:text-blue-400" title="Reply">
-                <Reply size={12} />
-             </button>
-             <button onClick={handleCopy} className="p-1.5 text-white hover:text-green-400" title="Copy">
-                {copied ? <Check size={12} /> : <Copy size={12} />}
-             </button>
-          </div>
+          {/* Actions Bar (Reply / Copy) - Always visible on mobile, hover on desktop */}
+          {!isUser && (
+            <div className={`flex items-center gap-1 mb-2 md:absolute md:-top-8 ${isUser ? 'md:right-0 justify-end' : 'md:left-0 justify-start'} md:opacity-0 md:group-hover:opacity-100 transition-opacity md:bg-black/50 md:backdrop-blur-md md:rounded-full md:px-2 md:py-1 z-10`}>
+               <button onClick={() => onReply(message)} className="p-1.5 rounded-full bg-white/10 md:bg-transparent text-current hover:text-blue-400 hover:bg-white/20 transition-colors" title="Reply">
+                  <Reply size={14} />
+               </button>
+               <button onClick={handleCopy} className="p-1.5 rounded-full bg-white/10 md:bg-transparent text-current hover:text-green-400 hover:bg-white/20 transition-colors" title="Copy">
+                  {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+               </button>
+            </div>
+          )}
 
           {/* Fun Mode Actions */}
           {isFunMode && (
@@ -150,7 +152,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, theme, on
 
           {/* Text Content */}
           {message.contentType === ContentType.TEXT && (
-            <div className={`prose max-w-none ${theme.type === 'dark' ? 'prose-invert' : ''} prose-p:leading-relaxed`}>
+            <div className={`prose prose-sm md:prose-base max-w-none ${theme.type === 'dark' ? 'prose-invert' : ''} prose-p:leading-relaxed prose-pre:overflow-x-auto prose-pre:max-w-full break-words`}>
               {message.content ? (
                  isFunMode && !isUser && message.isStreaming ? (
                     <HackerText text={message.content.slice(-100)} /> 
@@ -160,19 +162,28 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, theme, on
                         code({node, inline, className, children, ...props}: any) {
                         const match = /language-(\w+)/.exec(className || '');
                         return !inline && match ? (
-                            <SyntaxHighlighter
-                            {...props}
-                            children={String(children).replace(/\n$/, '')}
-                            style={theme.type === 'dark' ? vscDarkPlus : ghcolors}
-                            language={match[1]}
-                            PreTag="div"
-                            customStyle={{ margin: '1em 0', borderRadius: '0.5em', fontSize: '0.85rem' }}
-                            />
+                            <div className="overflow-x-auto max-w-full">
+                              <SyntaxHighlighter
+                              {...props}
+                              children={String(children).replace(/\n$/, '')}
+                              style={theme.type === 'dark' ? vscDarkPlus : ghcolors}
+                              language={match[1]}
+                              PreTag="div"
+                              customStyle={{ margin: '0.5em 0', borderRadius: '0.5em', fontSize: '0.75rem', maxWidth: '100%', overflowX: 'auto' }}
+                              wrapLongLines={true}
+                              />
+                            </div>
                         ) : (
-                            <code {...props} className={`${className} bg-white/10 px-1 py-0.5 rounded text-sm`}>
+                            <code {...props} className={`${className} bg-white/10 px-1 py-0.5 rounded text-xs md:text-sm break-all`}>
                             {children}
                             </code>
                         )
+                        },
+                        pre({children, ...props}: any) {
+                          return <pre {...props} className="overflow-x-auto max-w-full">{children}</pre>
+                        },
+                        p({children, ...props}: any) {
+                          return <p {...props} className="break-words whitespace-pre-wrap">{children}</p>
                         }
                     }}
                     >

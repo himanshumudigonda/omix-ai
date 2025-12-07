@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageSquare, Image as ImageIcon, Plus, Trash2, LogOut, Radio } from 'lucide-react';
+import { MessageSquare, Image as ImageIcon, Plus, Trash2, LogOut } from 'lucide-react';
 import { AppMode, ChatSession, Theme, UserProfile } from '../types';
 
 interface SidebarProps {
@@ -75,18 +75,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <MessageSquare size={16} />
             <span>Chat</span>
-          </button>
-          
-          <button
-            onClick={() => setMode(AppMode.LIVE)}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              currentMode === AppMode.LIVE
-              ? `${theme.accent} shadow-md`
-              : `${theme.textSecondary} hover:${theme.text} hover:bg-white/5`
-            }`}
-          >
-            <Radio size={16} />
-            <span>Omix Live</span>
           </button>
 
           <button

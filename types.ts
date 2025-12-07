@@ -33,8 +33,7 @@ export interface ChatSession {
 
 export enum AppMode {
   CHAT = 'chat',
-  IMAGE = 'image',
-  LIVE = 'live'
+  IMAGE = 'image'
 }
 
 export type ThemeType = 'light' | 'dark';
