@@ -136,11 +136,17 @@ app.post('/api/chat', async (req, res) => {
             const params = {
                 messages,
                 model: apiModelId,
-                temperature: temperature || 0.7,
-                max_completion_tokens: max_tokens || 4096,
+                temperature: temperature || 1,
+                max_completion_tokens: max_tokens || 8192,
                 top_p: top_p || 1,
-                stream: true
+                stream: true,
+                stop: null
             };
+
+            // Add reasoning_effort for models that support it (GPT-OSS models)
+            if (apiModelId.startsWith('openai/gpt-oss')) {
+                params.reasoning_effort = 'medium';
+            }
 
             return await groq.chat.completions.create(params);
         } else {
