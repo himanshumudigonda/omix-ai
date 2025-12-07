@@ -4,7 +4,7 @@
 // const apiKey = GEMINI_API_KEY;
 
 // Image Generation Model (Gemini 2.5 Flash Image or Nano Banana)
-const IMAGE_MODEL = 'gemini-2.5-flash-image';
+// const IMAGE_MODEL = 'gemini-2.5-flash-image';
 
 export async function* streamTextResponse(
   modelId: string,

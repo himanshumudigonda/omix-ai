@@ -16,7 +16,7 @@ import { THEMES } from './lib/themes';
 import { FunAvatar } from './components/FunAvatar';
 import { speak, stopSpeaking } from './services/tts';
 import { analyzeSentiment, triggerConfetti } from './lib/utils';
-import { MODEL_CATEGORIES } from './lib/models';
+import { MODEL_CATEGORIES, LIVE_MODELS } from './lib/models';
 import { connectLiveSession, disconnectLiveSession, VoiceGender } from './services/liveService';
 
 function App() {
@@ -26,7 +26,7 @@ function App() {
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES.obsidian);
   const [isFunMode, setIsFunMode] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>('auto');
-  const [activeTab, setActiveTab] = useState<'gemini' | 'openai' | 'meta'>('gemini');
+  const [activeTab, setActiveTab] = useState<'auto' | 'gemini' | 'openai' | 'meta'>('auto');
   const [useWebSearch, setUseWebSearch] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -47,6 +47,7 @@ function App() {
   const [liveSessionActive, setLiveSessionActive] = useState(false);
   const [liveStatus, setLiveStatus] = useState<string>('Disconnected');
   const [liveVoice, setLiveVoice] = useState<VoiceGender>('female');
+  const [liveModel, setLiveModel] = useState<string>(LIVE_MODELS[0].id);
 
   const [isInputFocused, setIsInputFocused] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -253,7 +254,7 @@ function App() {
 
   const handleStartLiveSession = () => {
     setLiveSessionActive(true);
-    connectLiveSession(liveVoice, (status) => {
+    connectLiveSession(liveVoice, liveModel, (status) => {
       setLiveStatus(status);
       if (status === 'Disconnected' || status.includes('Error')) {
         setLiveSessionActive(false);
@@ -478,23 +479,27 @@ function App() {
             {/* Model Selector Tabs */}
             {mode !== AppMode.LIVE && (
               <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md p-1 rounded-full border border-white/10">
-                {['gemini', 'openai', 'meta'].map((tab) => (
+                {['auto', 'gemini', 'openai', 'meta'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
                     className={`relative p-2 rounded-full transition-all duration-300 ${activeTab === tab ? 'bg-white/20 shadow-lg scale-110' : 'hover:bg-white/10 opacity-70 hover:opacity-100'}`}
                     title={tab.charAt(0).toUpperCase() + tab.slice(1)}
                   >
-                    <img
-                      src={`/assets/${tab}_icon.png`}
-                      alt={tab}
-                      className="w-6 h-6 object-contain"
-                      onError={(e) => {
-                        // Fallback if image fails
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerText = tab.charAt(0).toUpperCase();
-                      }}
-                    />
+                    {tab === 'auto' ? (
+                      <div className="w-6 h-6 flex items-center justify-center font-bold text-xs">A</div>
+                    ) : (
+                      <img
+                        src={`/assets/${tab}_icon.png`}
+                        alt={tab}
+                        className="w-6 h-6 object-contain"
+                        onError={(e) => {
+                          // Fallback if image fails
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.parentElement!.innerText = tab.charAt(0).toUpperCase();
+                        }}
+                      />
+                    )}
                   </button>
                 ))}
 
@@ -557,6 +562,21 @@ function App() {
             </div>
             <h2 className={`text-2xl font-bold mb-2 ${currentTheme.text}`}>{liveStatus}</h2>
             <p className={`mb-8 ${currentTheme.textSecondary}`}>Conversational mode enabled. Speak naturally.</p>
+
+            {/* Live Model Selector */}
+            <div className="mb-6 relative">
+              <select
+                value={liveModel}
+                onChange={(e) => setLiveModel(e.target.value)}
+                disabled={liveSessionActive}
+                className={`appearance-none pl-4 pr-10 py-2 rounded-full text-sm font-medium border cursor-pointer focus:outline-none bg-black/20 border-white/10 ${currentTheme.text} ${liveSessionActive ? 'opacity-50 cursor-not-allowed' : 'hover:bg-black/30'}`}
+              >
+                {LIVE_MODELS.map(m => (
+                  <option key={m.id} value={m.id} className="text-black">{m.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${currentTheme.textSecondary}`} />
+            </div>
 
             <div className="flex items-center gap-4 mb-8 bg-black/20 p-1.5 rounded-full border border-white/10">
               <button

@@ -6,10 +6,12 @@ export type VoiceGender = 'male' | 'female';
 
 export const connectLiveSession = async (
   voice: VoiceGender,
+  modelId: string,
   onStatusChange: (status: string) => void
 ) => {
+  console.log(`Connecting to Live Session with model: ${modelId} and voice: ${voice}`);
   console.warn("Live mode is currently disabled.");
-  onStatusChange("Live Mode Unavailable");
+  onStatusChange(`Live Mode Unavailable (${modelId})`);
 };
 
 export const disconnectLiveSession = () => {

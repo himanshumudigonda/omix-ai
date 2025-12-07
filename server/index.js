@@ -59,9 +59,9 @@ app.post('/api/chat', async (req, res) => {
 
             try {
                 const modelPools = {
-                    'auto': ['llama-3.3-70b-versatile', 'gemma-2-9b-it', 'openai/gpt-oss-120b', 'mixtral-8x7b-32768'],
-                    'gemini': ['gemma-2-9b-it', 'gemini-2.5-flash'],
-                    'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'],
+                    'auto': ['gemma-2-9b-it', 'llama-3.3-70b-versatile'],
+                    'gemini': ['gemini-3-pro-preview', 'gemini-2.5-flash', 'gemma-2-9b-it'],
+                    'openai': ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
                     'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
                 };
 
@@ -76,15 +76,17 @@ app.post('/api/chat', async (req, res) => {
                     
                     Task: Pick the SINGLE BEST model ID from the list.
                     Rules:
-                    - For 'gemini' category: PREFER 'gemma-2-9b-it' for chat/creative, 'gemini-2.5-flash' for reasoning.
-                    - For 'auto': PREFER 'llama-3.3-70b-versatile' for complex tasks.
+                    - For 'auto' category:
+                        - PREFER 'gemma-2-9b-it' for normal conversation, simple queries, and basic code.
+                        - PREFER 'llama-3.3-70b-versatile' ONLY for complex coding tasks, advanced logic, or "more code".
+                    - For 'gemini' category: PREFER 'gemini-3-pro-preview' for complex reasoning, 'gemini-2.5-flash' for speed.
                     
                     Return ONLY the model ID.
                 `;
 
                 const routerCompletion = await groq.chat.completions.create({
                     messages: [{ role: "system", content: systemPrompt }],
-                    model: 'groq/compound-mini',
+                    model: 'llama-3.1-8b-instant', // Using a fast, real model for routing
                     temperature: 0.1,
                     max_completion_tokens: 20,
                 });
