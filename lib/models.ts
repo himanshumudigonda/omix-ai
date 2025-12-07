@@ -28,13 +28,9 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     id: 'gemini',
     name: 'Gemini', // Tab Name - Google Models
     models: [
-      createModel('gemini-2.5-flash', 'Gemini 2.5 Flash', 'gemini', 'fast'),
-      createModel('gemini-2.5-flash-lite', 'Gemini 2.5 Flash Lite', 'gemini', 'fast'),
-      createModel('gemma-3-27b', 'Gemma 3 27B', 'gemini', 'balanced'),
-      createModel('gemma-3-12b', 'Gemma 3 12B', 'gemini', 'balanced'),
-      createModel('gemma-3-4b', 'Gemma 3 4B', 'gemini', 'fast'),
-      createModel('gemma-3-2b', 'Gemma 3 2B', 'gemini', 'fast'),
-      createModel('gemma-3-1b', 'Gemma 3 1B', 'gemini', 'fast'),
+      createModel('gemini-2.0-flash', 'Gemini 2.0 Flash', 'gemini', 'fast'),
+      createModel('gemini-1.5-flash', 'Gemini 1.5 Flash', 'gemini', 'fast'),
+      createModel('gemini-1.5-pro', 'Gemini 1.5 Pro', 'gemini', 'reasoning'),
     ]
   },
   {
