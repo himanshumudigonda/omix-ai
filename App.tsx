@@ -465,6 +465,9 @@ function App() {
         onNewChat={handleNewChat}
         theme={currentTheme}
         user={user}
+        isFunMode={isFunMode}
+        onToggleFunMode={toggleFunMode}
+        onThemeChange={setCurrentTheme}
       />
 
       {isSidebarOpen && (
@@ -538,15 +541,19 @@ function App() {
                 <Trash2 size={18} />
               </button>
             )}
+            {/* Hide arcade mode button on mobile - now in sidebar */}
             <button
               onClick={toggleFunMode}
-              className={`p-2.5 rounded-full backdrop-blur-md shadow-sm border transition-all duration-300 ${isFunMode ? 'bg-green-500 text-black border-black animate-pulse' : `${currentTheme.panel} ${currentTheme.border} ${currentTheme.textSecondary}`}`}
+              className={`hidden md:flex p-2.5 rounded-full backdrop-blur-md shadow-sm border transition-all duration-300 ${isFunMode ? 'bg-green-500 text-black border-black animate-pulse' : `${currentTheme.panel} ${currentTheme.border} ${currentTheme.textSecondary}`}`}
               title="Fun Mode"
             >
               <Gamepad2 size={18} />
             </button>
 
-            <ThemeSelector currentTheme={currentTheme} onThemeChange={setCurrentTheme} />
+            {/* Hide theme selector on mobile - now in sidebar */}
+            <div className="hidden md:block">
+              <ThemeSelector currentTheme={currentTheme} onThemeChange={setCurrentTheme} />
+            </div>
           </div>
         </header>
 

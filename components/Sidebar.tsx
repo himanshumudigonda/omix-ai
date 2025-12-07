@@ -1,6 +1,7 @@
 import React from 'react';
-import { MessageSquare, Image as ImageIcon, Plus, Trash2, LogOut } from 'lucide-react';
+import { MessageSquare, Image as ImageIcon, Plus, Trash2, LogOut, Gamepad2, Palette } from 'lucide-react';
 import { AppMode, ChatSession, Theme, UserProfile } from '../types';
+import { THEMES } from '../lib/themes';
 
 interface SidebarProps {
   currentMode: AppMode;
@@ -14,6 +15,9 @@ interface SidebarProps {
   isOpen: boolean;
   theme: Theme;
   user: UserProfile | null;
+  isFunMode: boolean;
+  onToggleFunMode: () => void;
+  onThemeChange: (theme: Theme) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ 
@@ -27,8 +31,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNewChat,
   isOpen,
   theme,
-  user
+  user,
+  isFunMode,
+  onToggleFunMode,
+  onThemeChange
 }) => {
+  const themeOptions = Object.values(THEMES);
+  
   return (
     <div className={`
       fixed inset-y-0 left-0 z-40 w-72 transform transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1)
@@ -88,6 +97,47 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <ImageIcon size={16} />
             <span>Image Generation</span>
           </button>
+        </div>
+      </div>
+
+      {/* Customization Section */}
+      <div className="px-6 py-4 border-t border-white/10">
+        <div className={`text-[10px] font-bold uppercase tracking-widest mb-3 ${theme.textSecondary}`}>Customize</div>
+        <div className="space-y-2">
+          {/* Arcade Mode Toggle */}
+          <button
+            onClick={onToggleFunMode}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              isFunMode 
+              ? 'bg-green-500 text-black shadow-md' 
+              : `${theme.textSecondary} hover:${theme.text} hover:bg-white/5`
+            }`}
+          >
+            <Gamepad2 size={16} />
+            <span>Arcade Mode</span>
+            {isFunMode && <span className="ml-auto text-[10px] bg-black/20 px-2 py-0.5 rounded-full">ON</span>}
+          </button>
+
+          {/* Theme Selector */}
+          <div className="space-y-2">
+            <div className={`flex items-center gap-3 px-3 py-2 ${theme.textSecondary}`}>
+              <Palette size={16} />
+              <span className="text-sm font-medium">Theme</span>
+            </div>
+            <div className="grid grid-cols-4 gap-2 px-3">
+              {themeOptions.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => onThemeChange(t)}
+                  className={`w-8 h-8 rounded-lg border-2 transition-all hover:scale-110 ${
+                    theme.id === t.id ? 'border-white scale-110' : 'border-transparent'
+                  }`}
+                  style={{ background: t.preview }}
+                  title={t.name}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 

@@ -21,12 +21,35 @@ export const FunAvatar: React.FC<FunAvatarProps> = ({ isTalking, isDizzy }) => {
     <div 
       className={`
         fixed bottom-24 right-2 z-50 pointer-events-none transition-all duration-700
-        ${isTalking ? 'animate-float-fast' : 'animate-float'}
         ${isDizzy ? 'animate-shake scale-90 rotate-12' : ''}
-        hidden md:block
       `}
     >
-      <div className="relative w-32 h-40 md:w-48 md:h-56 filter drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+      {/* Mobile version - simpler static robot */}
+      <div className="block md:hidden w-20 h-24">
+        <svg viewBox="0 0 100 120" className="w-full h-full">
+          <defs>
+            <linearGradient id="mobileGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#22d3ee" />
+              <stop offset="100%" stopColor="#0891b2" />
+            </linearGradient>
+          </defs>
+          {/* Simple body */}
+          <rect x="30" y="50" width="40" height="50" rx="5" fill="#1e293b" stroke="#22d3ee" strokeWidth="2" />
+          {/* Core */}
+          <circle cx="50" cy="75" r="10" fill="url(#mobileGrad)" className={isTalking ? 'animate-pulse' : ''} />
+          {/* Head */}
+          <rect x="25" y="15" width="50" height="35" rx="8" fill="#334155" stroke="#22d3ee" strokeWidth="2" />
+          {/* Eyes */}
+          <rect x="32" y="25" width="12" height="6" rx="2" fill="#22d3ee" className={blink ? 'opacity-0' : 'opacity-100'} />
+          <rect x="56" y="25" width="12" height="6" rx="2" fill="#22d3ee" className={blink ? 'opacity-0' : 'opacity-100'} />
+          {/* Antenna */}
+          <line x1="50" y1="15" x2="50" y2="5" stroke="#64748b" strokeWidth="2" />
+          <circle cx="50" cy="5" r="3" fill={isTalking ? "#ef4444" : "#22c55e"} className={isTalking ? 'animate-pulse' : ''} />
+        </svg>
+      </div>
+      
+      {/* Desktop version - full animated robot */}
+      <div className={`hidden md:block relative w-48 h-56 filter drop-shadow-[0_0_15px_rgba(34,211,238,0.4)] ${isTalking ? 'animate-float-fast' : 'animate-float'}`}>
         <svg viewBox="0 0 300 350" className="w-full h-full overflow-visible">
           <defs>
             {/* Metallic Gradient */}

@@ -43,17 +43,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
       <div className="z-10 w-full max-w-md p-8 md:p-12 text-center transform transition-all animate-slide-up">
         <div className="mb-10 inline-block">
-          <div className="w-20 h-20 bg-gradient-to-tr from-void-900 to-void-800 rounded-3xl mx-auto flex items-center justify-center shadow-2xl border border-white/5 rotate-3 hover:rotate-6 transition-transform duration-500">
-            <span className="text-4xl font-display font-bold text-white">O</span>
+          <div className="w-20 h-20 bg-gradient-to-tr from-green-600 to-green-500 rounded-3xl mx-auto flex items-center justify-center shadow-2xl border border-white/5 rotate-3 hover:rotate-6 transition-transform duration-500">
+            <span className="text-4xl font-display font-bold text-white">S</span>
           </div>
         </div>
 
         <h1 className="text-4xl md:text-5xl font-display font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
-          Omix AI
+          Sarvix AI
         </h1>
         <p className="text-gray-500 dark:text-gray-400 mb-12 text-lg font-light leading-relaxed">
           The ultimate convergence of speed and intelligence.<br />
-          Sign in to access your Omix workspace.
+          Sign in to access your Sarvix workspace.
         </p>
 
         <button

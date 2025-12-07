@@ -43,6 +43,7 @@ export interface Theme {
   id: string;
   name: string;
   type: ThemeType;
+  preview?: string;
   bg: string;
   text: string;
   textSecondary: string;
