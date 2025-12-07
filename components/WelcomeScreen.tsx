@@ -30,7 +30,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ userName, onQuickA
           <span className={`font-light italic opacity-80`}>{userName}</span>
         </h1>
         <p className={`text-lg max-w-xl mx-auto leading-relaxed font-light ${theme.textSecondary}`}>
-          I am Omix. Your intelligent engine for the future. <br/>
+          I am Sarvix. Your intelligent engine for the future. <br/>
           Select a capability below to begin your session.
         </p>
       </div>

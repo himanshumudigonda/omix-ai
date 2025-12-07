@@ -20,12 +20,13 @@ export const FunAvatar: React.FC<FunAvatarProps> = ({ isTalking, isDizzy }) => {
   return (
     <div 
       className={`
-        fixed bottom-24 right-4 z-50 pointer-events-none transition-all duration-700
+        fixed bottom-24 right-2 z-50 pointer-events-none transition-all duration-700
         ${isTalking ? 'animate-float-fast' : 'animate-float'}
         ${isDizzy ? 'animate-shake scale-90 rotate-12' : ''}
+        hidden md:block
       `}
     >
-      <div className="relative w-40 h-48 md:w-48 md:h-56 filter drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">
+      <div className="relative w-32 h-40 md:w-48 md:h-56 filter drop-shadow-[0_0_15px_rgba(34,211,238,0.4)]">
         <svg viewBox="0 0 300 350" className="w-full h-full overflow-visible">
           <defs>
             {/* Metallic Gradient */}

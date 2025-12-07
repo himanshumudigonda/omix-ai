@@ -40,10 +40,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Header */}
       <div className="p-6 flex items-center gap-3">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold shadow-glow ${theme.accent}`}>
-          O
+          S
         </div>
         <span className={`font-display font-bold text-xl tracking-tight ${theme.text}`}>
-          Omix AI
+          Sarvix AI
         </span>
       </div>
 
@@ -91,48 +91,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* History List */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1 custom-scrollbar">
-        <div className={`px-2 text-[10px] font-bold uppercase tracking-widest mb-2 mt-2 ${theme.textSecondary}`}>
-          Recent Activity
-        </div>
-        {sessions.length === 0 ? (
-          <div className={`text-sm italic px-2 py-4 text-center ${theme.textSecondary}`}>
-            Start a new conversation.
-          </div>
-        ) : (
-          sessions.map(session => (
-            <div 
-              key={session.id}
-              onClick={() => onLoadSession(session.id)}
-              className={`
-                group flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-200
-                ${activeSessionId === session.id 
-                  ? `${theme.type === 'dark' ? 'bg-white/10' : 'bg-gray-200'} ${theme.text} border ${theme.border}` 
-                  : `${theme.textSecondary} hover:bg-white/5 border border-transparent`}
-              `}
-            >
-              <span className="text-sm truncate max-w-[160px]">
-                {session.title || 'Untitled Chat'}
-              </span>
-              
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteSession(session.id);
-                }}
-                className={`
-                  p-1.5 rounded-md hover:bg-red-500/10 hover:text-red-500 transition-colors
-                  ${activeSessionId === session.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
-                `}
-                title="Delete Chat"
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+      {/* Spacer */}
+      <div className="flex-1"></div>
 
       {/* User Profile / Footer */}
       <div className={`p-4 border-t ${theme.border}`}>
@@ -147,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
             <div className="flex flex-col">
               <span className={`text-xs font-semibold ${theme.text}`}>{user?.name || 'User'}</span>
-              <span className={`text-[10px] ${theme.textSecondary}`}>Omix Pro</span>
+              <span className={`text-[10px] ${theme.textSecondary}`}>Sarvix Pro</span>
             </div>
           </div>
           

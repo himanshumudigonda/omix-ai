@@ -12,6 +12,40 @@ interface MessageBubbleProps {
   onReply: (message: ChatMessage) => void;
 }
 
+// Code block with copy button
+const CodeBlock: React.FC<{ language: string; code: string; theme: Theme }> = ({ language, code, theme }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = () => {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  return (
+    <div className="relative group/code my-2">
+      <button 
+        onClick={handleCopy}
+        className="absolute top-2 right-2 p-1.5 rounded-md bg-white/10 hover:bg-white/20 transition-colors z-10 opacity-100 md:opacity-0 md:group-hover/code:opacity-100"
+        title="Copy code"
+      >
+        {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+      </button>
+      <div className="overflow-x-auto max-w-[calc(100vw-120px)] md:max-w-full">
+        <SyntaxHighlighter
+          language={language}
+          style={theme.type === 'dark' ? vscDarkPlus : ghcolors}
+          PreTag="div"
+          customStyle={{ margin: '0', borderRadius: '0.5em', fontSize: '0.75rem', maxWidth: '100%' }}
+          wrapLongLines={false}
+        >
+          {code}
+        </SyntaxHighlighter>
+      </div>
+    </div>
+  );
+};
+
 const HackerText: React.FC<{ text: string }> = ({ text }) => {
   const [display, setDisplay] = useState('');
   
@@ -152,7 +186,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, theme, on
 
           {/* Text Content */}
           {message.contentType === ContentType.TEXT && (
-            <div className={`prose prose-sm md:prose-base max-w-none ${theme.type === 'dark' ? 'prose-invert' : ''} prose-p:leading-relaxed prose-pre:overflow-x-auto prose-pre:max-w-full break-words`}>
+            <div className={`prose prose-sm md:prose-base max-w-none ${theme.type === 'dark' ? 'prose-invert' : ''} prose-p:leading-relaxed prose-pre:overflow-x-auto prose-pre:max-w-full`} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
               {message.content ? (
                  isFunMode && !isUser && message.isStreaming ? (
                     <HackerText text={message.content.slice(-100)} /> 
@@ -161,29 +195,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, theme, on
                     components={{
                         code({node, inline, className, children, ...props}: any) {
                         const match = /language-(\w+)/.exec(className || '');
+                        const codeString = String(children).replace(/\n$/, '');
                         return !inline && match ? (
-                            <div className="overflow-x-auto max-w-full">
-                              <SyntaxHighlighter
-                              {...props}
-                              children={String(children).replace(/\n$/, '')}
-                              style={theme.type === 'dark' ? vscDarkPlus : ghcolors}
-                              language={match[1]}
-                              PreTag="div"
-                              customStyle={{ margin: '0.5em 0', borderRadius: '0.5em', fontSize: '0.75rem', maxWidth: '100%', overflowX: 'auto' }}
-                              wrapLongLines={true}
-                              />
-                            </div>
+                            <CodeBlock language={match[1]} code={codeString} theme={theme} />
                         ) : (
-                            <code {...props} className={`${className} bg-white/10 px-1 py-0.5 rounded text-xs md:text-sm break-all`}>
+                            <code {...props} className={`${className} bg-white/10 px-1 py-0.5 rounded text-xs md:text-sm`} style={{ wordBreak: 'break-all' }}>
                             {children}
                             </code>
                         )
                         },
                         pre({children, ...props}: any) {
-                          return <pre {...props} className="overflow-x-auto max-w-full">{children}</pre>
+                          return <pre {...props} className="overflow-x-auto max-w-full bg-transparent p-0 m-0">{children}</pre>
                         },
                         p({children, ...props}: any) {
-                          return <p {...props} className="break-words whitespace-pre-wrap">{children}</p>
+                          return <p {...props} style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{children}</p>
                         }
                     }}
                     >

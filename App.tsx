@@ -671,7 +671,7 @@ function App() {
               {replyingTo && (
                 <div className={`mx-4 mb-2 p-3 rounded-t-xl backdrop-blur-md border border-b-0 flex justify-between items-center ${currentTheme.panel} ${currentTheme.border}`}>
                   <div className="flex flex-col text-xs">
-                    <span className={`${currentTheme.textSecondary} font-bold`}>Replying to {replyingTo.type === MessageType.USER ? 'You' : 'Omix'}</span>
+                    <span className={`${currentTheme.textSecondary} font-bold`}>Replying to {replyingTo.type === MessageType.USER ? 'You' : 'Sarvix'}</span>
                     <span className={`${currentTheme.text} truncate max-w-xs opacity-80`}>{replyingTo.content}</span>
                   </div>
                   <button onClick={() => setReplyingTo(null)} className="p-1 hover:bg-white/10 rounded-full">
