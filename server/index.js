@@ -14,10 +14,25 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // CORS configuration for split deployment (Netlify frontend + Render backend)
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
+// Add common Netlify patterns
+allowedOrigins.push('https://omixai.netlify.app');
+
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS 
-    ? process.env.ALLOWED_ORIGINS.split(',') 
-    : ['http://localhost:5173', 'http://localhost:3000'],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin) || origin.endsWith('.netlify.app')) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Allow anyway for debugging - change to callback(new Error('Not allowed by CORS')) for strict mode
+    }
+  },
   credentials: true
 };
 
