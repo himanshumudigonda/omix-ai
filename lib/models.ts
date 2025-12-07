@@ -33,7 +33,12 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
       createModel('gemini-2.5-pro', 'Gemini 2.5 Pro', 'gemini', 'reasoning'),
       createModel('gemini-2.5-flash', 'Gemini 2.5 Flash', 'gemini', 'fast'),
       createModel('gemini-2.5-flash-lite', 'Gemini 2.5 Flash Lite', 'gemini', 'fast'),
-      // Gemma
+      // Gemma 3 (Groq)
+      createModel('gemma-3-27b-it', 'Gemma 3 27B', 'groq', 'balanced'),
+      createModel('gemma-3-12b-it', 'Gemma 3 12B', 'groq', 'balanced'),
+      createModel('gemma-3-4b-it', 'Gemma 3 4B', 'groq', 'fast'),
+      createModel('gemma-3-1b-it', 'Gemma 3 1B', 'groq', 'fast'),
+      // Gemma 2
       createModel('gemma-2-27b-it', 'Gemma 2 27B', 'gemini', 'balanced'),
       createModel('gemma-2-9b-it', 'Gemma 2 9B', 'gemini', 'balanced'),
     ]

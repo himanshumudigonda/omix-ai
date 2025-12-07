@@ -5,6 +5,8 @@ import { Groq } from 'groq-sdk';
 import OpenAI from 'openai';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import http from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 
 dotenv.config();
 
@@ -27,6 +29,51 @@ const groq = new Groq({ apiKey: GROQ_API_KEY });
 const gemini = new OpenAI({
     apiKey: GEMINI_API_KEY,
     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+});
+
+// Create HTTP Server
+const server = http.createServer(app);
+
+// WebSocket Server for Gemini Live
+const wss = new WebSocketServer({ server });
+
+wss.on('connection', (ws) => {
+    console.log('Client connected to Live WebSocket');
+
+    const geminiWs = new WebSocket(
+        `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`
+    );
+
+    geminiWs.on('open', () => {
+        console.log('Connected to Gemini Live API');
+    });
+
+    geminiWs.on('message', (data) => {
+        if (ws.readyState === WebSocket.OPEN) {
+            ws.send(data);
+        }
+    });
+
+    geminiWs.on('error', (error) => {
+        console.error('Gemini WebSocket Error:', error);
+        ws.close();
+    });
+
+    geminiWs.on('close', () => {
+        console.log('Gemini WebSocket closed');
+        ws.close();
+    });
+
+    ws.on('message', (data) => {
+        if (geminiWs.readyState === WebSocket.OPEN) {
+            geminiWs.send(data);
+        }
+    });
+
+    ws.on('close', () => {
+        console.log('Client WebSocket closed');
+        geminiWs.close();
+    });
 });
 
 // --- Routes ---
@@ -126,13 +173,19 @@ app.post('/api/chat', async (req, res) => {
             let maxTokens = max_tokens || 1024;
             let stream = true;
             let compoundCustom = undefined;
+            let extraHeaders = {};
 
+            // Special handling for Compound models
             if (targetModel === 'groq/compound' || targetModel === 'groq/compound-mini') {
                 compoundCustom = { "tools": { "enabled_tools": ["web_search", "code_interpreter", "visit_website"] } };
+                extraHeaders = { "Groq-Model-Version": "latest" };
+                temp = 1; // User example uses temp 1
+                top_p = 1;
             }
-            // High spec models
-            if (targetModel.includes('70b') || targetModel.includes('120b') || targetModel.includes('gpt-oss')) {
-                maxTokens = 4096;
+            
+            // High spec models / Reasoning models
+            if (targetModel.includes('70b') || targetModel.includes('120b') || targetModel.includes('gpt-oss') || targetModel.includes('kimi')) {
+                maxTokens = 8192; // Increased for larger models
             }
 
             const params = {
@@ -143,10 +196,15 @@ app.post('/api/chat', async (req, res) => {
                 top_p: top_p || 1,
                 stream: stream
             };
-            if (compoundCustom) params.compound_custom = compoundCustom;
+            
+            // Add compound_custom if applicable
+            if (compoundCustom) {
+                // @ts-ignore - Groq SDK allows extra properties
+                params.compound_custom = compoundCustom;
+            }
 
             try {
-                const completion = await groq.chat.completions.create(params);
+                const completion = await groq.chat.completions.create(params, { headers: extraHeaders });
 
                 res.setHeader('Content-Type', 'text/event-stream');
                 res.setHeader('Cache-Control', 'no-cache');
@@ -232,6 +290,6 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

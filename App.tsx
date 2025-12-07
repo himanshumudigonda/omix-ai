@@ -252,15 +252,21 @@ function App() {
     recognition.start();
   };
 
+  // Live Mode Logic
+  const liveRecognitionRef = useRef<any>(null);
+
   const handleStartLiveSession = () => {
     setLiveSessionActive(true);
     connectLiveSession(liveVoice, liveModel, (status) => {
       setLiveStatus(status);
+
       if (status === 'Disconnected' || status.includes('Error')) {
         setLiveSessionActive(false);
       }
     });
   };
+
+  // Live listening logic moved to liveService.ts
 
   const handleStopLiveSession = () => {
     disconnectLiveSession();
@@ -374,6 +380,9 @@ function App() {
         } else {
           setIsProcessing(false);
           setIsTalking(false);
+          // Don't show error if it was just an empty stream (sometimes happens with keep-alive)
+          if (fullContent.length === 0) return; 
+          
           const errorMessage: ChatMessage = {
             id: aiMessageId,
             type: MessageType.ERROR,
