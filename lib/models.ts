@@ -19,7 +19,10 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
   {
     id: 'auto',
     name: 'Auto',
-    models: [] // Auto mode doesn't show individual models - it automatically picks the best one
+    models: [
+      createModel('groq/compound', 'Compound (Web Search)', 'groq', 'balanced'),
+      createModel('groq/compound-mini', 'Compound Mini', 'groq', 'fast'),
+    ]
   },
   {
     id: 'gemini',
@@ -62,6 +65,13 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     models: [
       createModel('moonshotai/kimi-k2-instruct', 'Kimi K2 Instruct', 'groq', 'balanced'),
       createModel('moonshotai/kimi-k2-instruct-0905', 'Kimi K2 (0905)', 'groq', 'balanced'),
+    ]
+  },
+  {
+    id: 'qwen',
+    name: 'Qwen', // Tab Name - Groq Qwen Models
+    models: [
+      createModel('qwen/qwen3-32b', 'Qwen3 32B', 'groq', 'balanced'),
     ]
   },
   {

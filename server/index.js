@@ -97,11 +97,12 @@ app.post('/api/chat', async (req, res) => {
 
     // Define model fallback chains for each category
     const fallbackChains = {
-        'auto': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+        'auto': ['groq/compound', 'groq/compound-mini', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
         'gemini': ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemma-3-27b', 'gemma-3-12b', 'gemma-3-4b', 'gemma-3-1b'],
         'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'openai/gpt-oss-safeguard-20b'],
         'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'],
-        'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905']
+        'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905'],
+        'qwen': ['qwen/qwen3-32b']
     };
 
     // Helper to determine provider
@@ -137,15 +138,19 @@ app.post('/api/chat', async (req, res) => {
                 messages,
                 model: apiModelId,
                 temperature: temperature || 1,
-                max_completion_tokens: max_tokens || 8192,
+                max_completion_tokens: max_tokens || 1024,
                 top_p: top_p || 1,
                 stream: true,
                 stop: null
             };
 
-            // Add reasoning_effort for models that support it (GPT-OSS models)
-            if (apiModelId.startsWith('openai/gpt-oss')) {
-                params.reasoning_effort = 'medium';
+            // Add compound_custom for compound models (web search, code interpreter)
+            if (apiModelId.startsWith('groq/compound')) {
+                params.compound_custom = {
+                    tools: {
+                        enabled_tools: ['web_search', 'code_interpreter', 'visit_website']
+                    }
+                };
             }
 
             return await groq.chat.completions.create(params);
