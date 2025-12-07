@@ -112,15 +112,30 @@ app.post('/api/chat', async (req, res) => {
         return 'groq';
     };
 
+    // Helper to get correct model ID for API calls
+    const getApiModelId = (modelId, provider) => {
+        if (provider === 'gemini') {
+            // Gemma models need 'models/' prefix for Google API
+            if (modelId.startsWith('gemma-')) {
+                return `models/${modelId}-it`; // e.g., models/gemma-3-27b-it
+            }
+            // Gemini models work as-is
+            return modelId;
+        }
+        // Groq models work as-is
+        return modelId;
+    };
+
     // Helper to execute a single model request
     const executeModel = async (targetModel, isRetry = false) => {
         const finalProvider = getProvider(targetModel);
-        console.log(`${isRetry ? '🔄 Retrying' : '🚀 Executing'}: ${targetModel} via ${finalProvider}`);
+        const apiModelId = getApiModelId(targetModel, finalProvider);
+        console.log(`${isRetry ? '🔄 Retrying' : '🚀 Executing'}: ${targetModel} (API: ${apiModelId}) via ${finalProvider}`);
 
         if (finalProvider === 'groq') {
             const params = {
                 messages,
-                model: targetModel,
+                model: apiModelId,
                 temperature: temperature || 0.7,
                 max_completion_tokens: max_tokens || 4096,
                 top_p: top_p || 1,
@@ -130,7 +145,7 @@ app.post('/api/chat', async (req, res) => {
             return await groq.chat.completions.create(params);
         } else {
             return await gemini.chat.completions.create({
-                model: targetModel,
+                model: apiModelId,
                 messages: messages,
                 stream: true,
             });
