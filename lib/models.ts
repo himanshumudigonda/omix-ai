@@ -20,32 +20,26 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     id: 'auto',
     name: 'Auto',
     models: [
-      createModel('groq/compound', 'Compound (Web)', 'groq', 'balanced'),
+      createModel('groq/compound', 'Compound (Web Search)', 'groq', 'balanced'),
       createModel('groq/compound-mini', 'Compound Mini', 'groq', 'fast'),
     ]
   },
   {
     id: 'gemini',
-    name: 'Gemini', // Tab Name
+    name: 'Gemini', // Tab Name - Google Models
     models: [
-      // Latest
-      createModel('gemini-3-pro-preview', 'Gemini 3 Pro (Preview)', 'gemini', 'reasoning'),
-      createModel('gemini-2.5-pro', 'Gemini 2.5 Pro', 'gemini', 'reasoning'),
       createModel('gemini-2.5-flash', 'Gemini 2.5 Flash', 'gemini', 'fast'),
       createModel('gemini-2.5-flash-lite', 'Gemini 2.5 Flash Lite', 'gemini', 'fast'),
-      // Gemma 3 (Groq)
-      createModel('gemma-3-27b-it', 'Gemma 3 27B', 'groq', 'balanced'),
-      createModel('gemma-3-12b-it', 'Gemma 3 12B', 'groq', 'balanced'),
-      createModel('gemma-3-4b-it', 'Gemma 3 4B', 'groq', 'fast'),
-      createModel('gemma-3-1b-it', 'Gemma 3 1B', 'groq', 'fast'),
-      // Gemma 2
-      createModel('gemma-2-27b-it', 'Gemma 2 27B', 'gemini', 'balanced'),
-      createModel('gemma-2-9b-it', 'Gemma 2 9B', 'gemini', 'balanced'),
+      createModel('gemma-3-27b', 'Gemma 3 27B', 'gemini', 'balanced'),
+      createModel('gemma-3-12b', 'Gemma 3 12B', 'gemini', 'balanced'),
+      createModel('gemma-3-4b', 'Gemma 3 4B', 'gemini', 'fast'),
+      createModel('gemma-3-2b', 'Gemma 3 2B', 'gemini', 'fast'),
+      createModel('gemma-3-1b', 'Gemma 3 1B', 'gemini', 'fast'),
     ]
   },
   {
     id: 'openai',
-    name: 'Groq/OpenAI', // Tab Name
+    name: 'GPT-OSS', // Tab Name - Groq OpenAI compatible
     models: [
       createModel('openai/gpt-oss-120b', 'GPT-OSS 120B', 'groq', 'balanced'),
       createModel('openai/gpt-oss-20b', 'GPT-OSS 20B', 'groq', 'fast'),
@@ -54,7 +48,7 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
   },
   {
     id: 'meta',
-    name: 'Meta', // Tab Name
+    name: 'Meta', // Tab Name - Groq Meta Models
     models: [
       createModel('llama-3.3-70b-versatile', 'Llama 3.3 70B', 'groq', 'balanced'),
       createModel('llama-3.1-8b-instant', 'Llama 3.1 8B', 'groq', 'fast'),
@@ -67,17 +61,16 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
   },
   {
     id: 'moonshot',
-    name: 'Moonshot',
+    name: 'Moonshot', // Tab Name - Groq Moonshot Models
     models: [
       createModel('moonshotai/kimi-k2-instruct', 'Kimi K2 Instruct', 'groq', 'balanced'),
-      createModel('moonshotai/kimi-k2-instruct-0905', 'Kimi K2 Instruct (0905)', 'groq', 'balanced'),
+      createModel('moonshotai/kimi-k2-instruct-0905', 'Kimi K2 (0905)', 'groq', 'balanced'),
     ]
   },
   {
     id: 'image',
     name: 'Image',
     models: [
-      createModel('imagen-3.0-generate-001', 'Imagen 3', 'gemini', 'image'),
       createModel('pollinations/flux-pro', 'FLUX Pro', 'gemini', 'image'),
       createModel('pollinations/flux-realism', 'Realism', 'gemini', 'image'),
     ]
@@ -88,8 +81,8 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
 export const MODELS: AiModel[] = MODEL_CATEGORIES.flatMap(c => c.models);
 
 export const LIVE_MODELS = [
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash Live' },
-  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Live' },
+  { id: 'gemini-2.0-flash-live', name: 'Gemini 2.0 Flash Live' },
+  { id: 'gemini-2.5-flash-live', name: 'Gemini 2.5 Flash Live' },
 ];
 
 export const getBestModelForPrompt = (prompt: string): string => {
@@ -102,7 +95,7 @@ export const getBestModelForPrompt = (prompt: string): string => {
 
   // Complex tasks / Research -> Compound
   if (p.includes('search') || p.includes('browse') || p.includes('analyze') || p.includes('summary') || p.length > 500) {
-    return 'llama-3.3-70b-versatile';
+    return 'groq/compound';
   }
 
   // Coding & Math -> Llama 3.3 or Compound
@@ -111,5 +104,5 @@ export const getBestModelForPrompt = (prompt: string): string => {
   }
 
   // Default -> Compound Mini
-  return 'llama-3.1-8b-instant';
+  return 'groq/compound-mini';
 };

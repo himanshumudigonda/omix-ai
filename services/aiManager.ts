@@ -18,7 +18,8 @@ export async function* generateSmartResponse(
   let modelDef = MODELS.find(m => m.id === targetModelId);
 
   if (!modelDef) {
-    modelDef = MODELS.find(m => m.id === 'gemini-2.5-flash') || MODELS[0];
+    // Fallback if model ID is invalid or removed
+    modelDef = MODELS.find(m => m.id === 'groq/compound-mini') || MODELS[0];
     targetModelId = modelDef.id;
   }
 

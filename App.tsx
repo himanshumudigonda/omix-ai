@@ -322,13 +322,8 @@ function App() {
 
         // Web Search Logic
         let targetModelId = selectedModelId;
-        if (useWebSearch) {
-          // If the user hasn't selected a compound model, default to the main compound model
-          if (selectedModelId !== 'groq/compound' && selectedModelId !== 'groq/compound-mini') {
-            targetModelId = 'groq/compound';
-          }
-          // If they HAVE selected a compound model (e.g. mini), keep it.
-        }
+        // Web search logic temporarily disabled until new provider integration
+        // if (useWebSearch) { ... }
 
         const stream = generateSmartResponse(targetModelId, text, history);
 

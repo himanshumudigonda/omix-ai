@@ -99,17 +99,17 @@ app.post('/api/chat', async (req, res) => {
         let targetModel = model;
         let finalProvider = provider;
 
-        // --- 1. Smart Router Logic (Compound Mini) ---
-        // If the user selected a category, we ask compound-mini to pick the best model.
+        // --- 1. Smart Router Logic ---
+        // If the user selected a category, we ask a fast model to pick the best model.
         if (['auto', 'gemini', 'openai', 'meta', 'moonshot'].includes(model)) {
             console.log(`🔄 Smart Router: Analyzing request for category '${model}'...`);
 
             try {
                 const modelPools = {
                     'auto': ['groq/compound', 'groq/compound-mini'],
-                    'gemini': ['gemini-3-pro-preview', 'gemini-2.5-flash', 'gemma-2-9b-it'],
-                    'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'],
-                    'meta': ['llama-3.3-70b-versatile', 'meta-llama/llama-4-maverick-17b-128e-instruct'],
+                    'gemini': ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemma-3-27b', 'gemma-3-12b'],
+                    'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'openai/gpt-oss-safeguard-20b'],
+                    'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'meta-llama/llama-4-maverick-17b-128e-instruct', 'meta-llama/llama-4-scout-17b-16e-instruct'],
                     'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905']
                 };
 
@@ -125,7 +125,8 @@ app.post('/api/chat', async (req, res) => {
                     Task: Pick the SINGLE BEST model ID from the list.
                     Rules:
                     - For 'auto' category: PREFER 'groq/compound' for complex tasks, 'groq/compound-mini' for speed.
-                    - For 'gemini' category: PREFER 'gemini-3-pro-preview' for complex reasoning.
+                    - For 'gemini' category: PREFER 'gemini-2.5-flash' for complex reasoning.
+                    - For 'meta' category: PREFER 'llama-3.3-70b-versatile' for complex tasks.
                     
                     Return ONLY the model ID.
                 `;
@@ -151,16 +152,18 @@ app.post('/api/chat', async (req, res) => {
             } catch (routerError) {
                 console.error("❌ Router Failed (using fallback):", routerError.message);
                 // Guaranteed Fallbacks
-                if (model === 'gemini') targetModel = 'gemma-2-9b-it';
+                if (model === 'gemini') targetModel = 'gemini-2.5-flash';
                 else if (model === 'openai') targetModel = 'openai/gpt-oss-120b';
                 else if (model === 'meta') targetModel = 'llama-3.3-70b-versatile';
-                else targetModel = 'llama-3.3-70b-versatile'; // Auto fallback
+                else if (model === 'moonshot') targetModel = 'moonshotai/kimi-k2-instruct';
+                else targetModel = 'groq/compound-mini'; // Auto fallback
             }
         }
 
         // --- 2. Determine Provider based on Target Model ---
         // CRITICAL: Ensure correct provider mapping
-        if (targetModel.startsWith('gemini')) {
+        // Gemini/Gemma models from Google go to 'gemini' provider
+        if (targetModel.startsWith('gemini') || targetModel.startsWith('gemma-3')) {
             finalProvider = 'gemini';
         } else {
             finalProvider = 'groq';
@@ -179,12 +182,11 @@ app.post('/api/chat', async (req, res) => {
             if (targetModel === 'groq/compound' || targetModel === 'groq/compound-mini') {
                 compoundCustom = { "tools": { "enabled_tools": ["web_search", "code_interpreter", "visit_website"] } };
                 extraHeaders = { "Groq-Model-Version": "latest" };
-                temp = 1; // User example uses temp 1
-                top_p = 1;
+                temp = 1;
             }
             
             // High spec models / Reasoning models
-            if (targetModel.includes('70b') || targetModel.includes('120b') || targetModel.includes('gpt-oss') || targetModel.includes('kimi')) {
+            if (targetModel.includes('70b') || targetModel.includes('120b') || targetModel.includes('gpt-oss') || targetModel.includes('kimi') || targetModel.includes('maverick')) {
                 maxTokens = 8192; // Increased for larger models
             }
 
@@ -199,7 +201,6 @@ app.post('/api/chat', async (req, res) => {
             
             // Add compound_custom if applicable
             if (compoundCustom) {
-                // @ts-ignore - Groq SDK allows extra properties
                 params.compound_custom = compoundCustom;
             }
 
