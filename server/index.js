@@ -54,15 +54,16 @@ app.post('/api/chat', async (req, res) => {
 
         // --- 1. Smart Router Logic (Compound Mini) ---
         // If the user selected a category, we ask compound-mini to pick the best model.
-        if (['auto', 'gemini', 'openai', 'meta'].includes(model)) {
+        if (['auto', 'gemini', 'openai', 'meta', 'moonshot'].includes(model)) {
             console.log(`🔄 Smart Router: Analyzing request for category '${model}'...`);
 
             try {
                 const modelPools = {
-                    'auto': ['gemma-2-9b-it', 'llama-3.3-70b-versatile'],
+                    'auto': ['groq/compound', 'groq/compound-mini'],
                     'gemini': ['gemini-3-pro-preview', 'gemini-2.5-flash', 'gemma-2-9b-it'],
-                    'openai': ['llama-3.3-70b-versatile', 'mixtral-8x7b-32768'],
-                    'meta': ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
+                    'openai': ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'],
+                    'meta': ['llama-3.3-70b-versatile', 'meta-llama/llama-4-maverick-17b-128e-instruct'],
+                    'moonshot': ['moonshotai/kimi-k2-instruct', 'moonshotai/kimi-k2-instruct-0905']
                 };
 
                 const pool = modelPools[model] || modelPools['auto'];
@@ -76,10 +77,8 @@ app.post('/api/chat', async (req, res) => {
                     
                     Task: Pick the SINGLE BEST model ID from the list.
                     Rules:
-                    - For 'auto' category:
-                        - PREFER 'gemma-2-9b-it' for normal conversation, simple queries, and basic code.
-                        - PREFER 'llama-3.3-70b-versatile' ONLY for complex coding tasks, advanced logic, or "more code".
-                    - For 'gemini' category: PREFER 'gemini-3-pro-preview' for complex reasoning, 'gemini-2.5-flash' for speed.
+                    - For 'auto' category: PREFER 'groq/compound' for complex tasks, 'groq/compound-mini' for speed.
+                    - For 'gemini' category: PREFER 'gemini-3-pro-preview' for complex reasoning.
                     
                     Return ONLY the model ID.
                 `;

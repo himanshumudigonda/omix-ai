@@ -20,7 +20,8 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     id: 'auto',
     name: 'Auto',
     models: [
-      createModel('auto', 'Auto (Smart Router)', 'groq', 'balanced'),
+      createModel('groq/compound', 'Compound (Web)', 'groq', 'balanced'),
+      createModel('groq/compound-mini', 'Compound Mini', 'groq', 'fast'),
     ]
   },
   {
@@ -41,9 +42,9 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     id: 'openai',
     name: 'Groq/OpenAI', // Tab Name
     models: [
-      createModel('llama-3.3-70b-versatile', 'Llama 3.3 70B', 'groq', 'balanced'),
-      createModel('llama-3.1-8b-instant', 'Llama 3.1 8B', 'groq', 'fast'),
-      createModel('mixtral-8x7b-32768', 'Mixtral 8x7B', 'groq', 'balanced'),
+      createModel('openai/gpt-oss-120b', 'GPT-OSS 120B', 'groq', 'balanced'),
+      createModel('openai/gpt-oss-20b', 'GPT-OSS 20B', 'groq', 'fast'),
+      createModel('openai/gpt-oss-safeguard-20b', 'GPT-OSS Safeguard 20B', 'groq', 'fast'),
     ]
   },
   {
@@ -52,7 +53,19 @@ export const MODEL_CATEGORIES: ModelCategory[] = [
     models: [
       createModel('llama-3.3-70b-versatile', 'Llama 3.3 70B', 'groq', 'balanced'),
       createModel('llama-3.1-8b-instant', 'Llama 3.1 8B', 'groq', 'fast'),
-      createModel('llama-guard-3-8b', 'Llama Guard 3 8B', 'groq', 'fast'),
+      createModel('meta-llama/llama-4-maverick-17b-128e-instruct', 'Llama 4 Maverick 17B', 'groq', 'balanced'),
+      createModel('meta-llama/llama-4-scout-17b-16e-instruct', 'Llama 4 Scout 17B', 'groq', 'fast'),
+      createModel('meta-llama/llama-guard-4-12b', 'Llama Guard 4 12B', 'groq', 'fast'),
+      createModel('meta-llama/llama-prompt-guard-2-22m', 'Prompt Guard 2 22M', 'groq', 'fast'),
+      createModel('meta-llama/llama-prompt-guard-2-86m', 'Prompt Guard 2 86M', 'groq', 'fast'),
+    ]
+  },
+  {
+    id: 'moonshot',
+    name: 'Moonshot',
+    models: [
+      createModel('moonshotai/kimi-k2-instruct', 'Kimi K2 Instruct', 'groq', 'balanced'),
+      createModel('moonshotai/kimi-k2-instruct-0905', 'Kimi K2 Instruct (0905)', 'groq', 'balanced'),
     ]
   },
   {

@@ -26,7 +26,7 @@ function App() {
   const [currentTheme, setCurrentTheme] = useState<Theme>(THEMES.obsidian);
   const [isFunMode, setIsFunMode] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string>('auto');
-  const [activeTab, setActiveTab] = useState<'auto' | 'gemini' | 'openai' | 'meta'>('auto');
+  const [activeTab, setActiveTab] = useState<'auto' | 'gemini' | 'openai' | 'meta' | 'moonshot'>('auto');
   const [useWebSearch, setUseWebSearch] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -479,7 +479,7 @@ function App() {
             {/* Model Selector Tabs */}
             {mode !== AppMode.LIVE && (
               <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md p-1 rounded-full border border-white/10">
-                {['auto', 'gemini', 'openai', 'meta'].map((tab) => (
+                {['auto', 'gemini', 'openai', 'meta', 'moonshot'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab as any)}
