@@ -111,11 +111,17 @@ function App() {
     }
   }, [input]);
 
-  // Shake to Wake Listener
+  // Shake to Wake Listener - DISABLED on mobile due to sensitivity issues
   useEffect(() => {
+    // Check if mobile - disable shake detection on mobile devices
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobileDevice) {
+      return; // Don't add shake listener on mobile
+    }
+
     let lastX = 0, lastY = 0, lastZ = 0;
     let lastUpdate = 0;
-    const SHAKE_THRESHOLD = 15;
+    const SHAKE_THRESHOLD = 25; // Increased threshold to reduce false triggers
 
     const handleMotion = (event: DeviceMotionEvent) => {
       if (!isFunMode) return;
@@ -139,7 +145,6 @@ function App() {
       }
     };
 
-    // Note: Request permission might be needed on iOS 13+
     window.addEventListener('devicemotion', handleMotion);
     return () => window.removeEventListener('devicemotion', handleMotion);
   }, [isFunMode]);
@@ -147,7 +152,11 @@ function App() {
   const handleShake = () => {
     if (isDizzy) return;
     setIsDizzy(true);
-    speak("Whoa! The world is spinning!");
+    // Only speak on desktop, not mobile
+    const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobileDevice) {
+      speak("Whoa! The world is spinning!");
+    }
     setTimeout(() => setIsDizzy(false), 3000);
   };
 
