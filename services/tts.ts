@@ -4,74 +4,89 @@ const isMobile = () => {
          window.innerWidth < 768;
 };
 
-let resumeTimer: ReturnType<typeof setInterval> | null = null;
+let currentUtterance: SpeechSynthesisUtterance | null = null;
+let isCurrentlySpeaking = false;
 
 export const speak = (text: string) => {
-  if (!window.speechSynthesis) return;
-
-  // Cancel any currently playing speech
-  stopSpeaking();
-
-  // Limit text length on mobile to prevent issues
-  const maxLength = isMobile() ? 200 : 500;
-  const textToSpeak = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-
-  const utterance = new SpeechSynthesisUtterance(textToSpeak);
-  
-  // Get voices
-  const voices = window.speechSynthesis.getVoices();
-  const preferredVoice = voices.find(v => v.name.includes('Google US English')) || 
-                         voices.find(v => v.lang.startsWith('en-US')) ||
-                         voices.find(v => v.lang.startsWith('en')) ||
-                         voices[0];
-  
-  if (preferredVoice) {
-    utterance.voice = preferredVoice;
+  // Skip if already speaking to prevent overlap
+  if (isCurrentlySpeaking) {
+    console.log('[TTS] Already speaking, skipping');
+    return;
   }
 
-  // Mobile-optimized settings
-  if (isMobile()) {
-    utterance.rate = 0.85;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-  } else {
-    utterance.rate = 1.1;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
+  if (!window.speechSynthesis) {
+    console.log('[TTS] Speech synthesis not supported');
+    return;
   }
 
-  utterance.onend = () => {
-    if (resumeTimer) {
-      clearInterval(resumeTimer);
-      resumeTimer = null;
-    }
-  };
+  // Cancel any previous speech first
+  window.speechSynthesis.cancel();
 
-  utterance.onerror = () => {
-    if (resumeTimer) {
-      clearInterval(resumeTimer);
-      resumeTimer = null;
+  // Allow up to ~150 words (approx 800 characters) on mobile, more on desktop
+  const maxLength = isMobile() ? 800 : 1500;
+  let textToSpeak = text;
+  
+  if (text.length > maxLength) {
+    // Truncate at sentence boundary if possible
+    textToSpeak = text.substring(0, maxLength);
+    const lastSentence = textToSpeak.lastIndexOf('.');
+    if (lastSentence > maxLength * 0.5) {
+      textToSpeak = textToSpeak.substring(0, lastSentence + 1);
     }
-  };
+  }
 
-  // Chrome mobile bug fix: pause/resume to prevent audio cutting out
-  if (isMobile()) {
-    resumeTimer = setInterval(() => {
-      if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-        window.speechSynthesis.pause();
-        window.speechSynthesis.resume();
+  isCurrentlySpeaking = true;
+
+  // Small delay to ensure previous speech is fully cancelled
+  setTimeout(() => {
+    try {
+      currentUtterance = new SpeechSynthesisUtterance(textToSpeak);
+      
+      // Get voices
+      let voices = window.speechSynthesis.getVoices();
+      
+      if (voices.length > 0) {
+        const preferredVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+        if (preferredVoice) {
+          currentUtterance.voice = preferredVoice;
+        }
       }
-    }, 3000);
-  }
 
-  window.speechSynthesis.speak(utterance);
+      // Simple settings - slower on mobile for clarity
+      currentUtterance.rate = isMobile() ? 0.85 : 1.0;
+      currentUtterance.pitch = 1.0;
+      currentUtterance.volume = 0.9;
+
+      currentUtterance.onend = () => {
+        isCurrentlySpeaking = false;
+        currentUtterance = null;
+      };
+
+      currentUtterance.onerror = (e) => {
+        console.log('[TTS] Error:', e.error);
+        isCurrentlySpeaking = false;
+        currentUtterance = null;
+      };
+
+      window.speechSynthesis.speak(currentUtterance);
+      
+      // Safety timeout - force stop after 30 seconds max
+      setTimeout(() => {
+        if (isCurrentlySpeaking) {
+          stopSpeaking();
+        }
+      }, 30000);
+      
+    } catch (e) {
+      console.log('[TTS] Exception:', e);
+      isCurrentlySpeaking = false;
+    }
+  }, 100);
 };
 
 export const stopSpeaking = () => {
-  if (resumeTimer) {
-    clearInterval(resumeTimer);
-    resumeTimer = null;
-  }
+  isCurrentlySpeaking = false;
+  currentUtterance = null;
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }

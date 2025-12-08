@@ -372,8 +372,10 @@ function App() {
           ));
 
           if (isFunMode) {
-            speak(fullContent);
-            setTimeout(() => setIsTalking(false), fullContent.length * 80);
+            // Speak first ~100-150 words of the response
+            const words = fullContent.split(' ').slice(0, 120).join(' ');
+            speak(words);
+            setTimeout(() => setIsTalking(false), Math.min(words.length * 50, 15000));
           }
 
         } else {
@@ -417,7 +419,7 @@ function App() {
             timestamp: Date.now()
           };
           setMessages(prev => [...prev, textMessage]);
-          if (isFunMode) speak(result.text);
+          if (isFunMode && result.text) speak(result.text);
         }
         setIsProcessing(false);
       }
