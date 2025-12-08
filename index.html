@@ -7,7 +7,8 @@
     <meta name="description" content="Sarvix AI - Your intelligent AI assistant powered by multiple models" />
     <meta name="theme-color" content="#22c55e" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="/assets/icon-192.svg" />
+    <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png" />
     <link rel="icon" type="image/svg+xml" href="/assets/icon-192.svg" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -167,5 +168,19 @@
   <body class="bg-[#F8F9FA] text-gray-900 dark:bg-void-950 dark:text-lux-platinum transition-colors duration-500 antialiased selection:bg-lux-accent selection:text-white">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
+  <script>
+    // Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('SW registration failed:', error);
+          });
+      });
+    }
+  </script>
 </body>
 </html>
