@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://omix-ai.onrender.com/sitemap.xml
+Sitemap: https://sarvixai.netlify.app/sitemap.xml
